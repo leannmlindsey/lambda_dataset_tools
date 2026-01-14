@@ -1,6 +1,6 @@
 # LAMBDA Dataset Construction Tools
 
-Tools for constructing the LAMBDA (Large-scale Assessment of Model-Based Detection Algorithms) benchmark datasets for prophage detection in genomic language models.
+Tools for constructing the LAMBDA ( LAnguage Model Bacteriophage Detection Assessment) benchmark datasets for prophage detection in bacterial hosts using genomic language models.
 
 ## Overview
 
