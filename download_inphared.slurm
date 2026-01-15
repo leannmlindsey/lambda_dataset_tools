@@ -3,23 +3,34 @@
 #SBATCH --output=inphared_download_%j.out
 #SBATCH --error=inphared_download_%j.err
 #SBATCH --time=24:00:00
-#SBATCH --account=bfzj-dtai-gh
-#SBATCH --partition=ghx4
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=16g
-#SBATCH --gpus-per-node=1
+#
+# NOTE: Add your account and partition, e.g.:
+# #SBATCH --account=your_account
+# #SBATCH --partition=your_partition
 
 # Download INPHARED phage genome database
-# Includes all files, PHROGs HMM, with decompression
+#
+# Usage: Set OUTPUT_DIR and SCRIPT_DIR environment variables, then submit:
+#   export OUTPUT_DIR=/path/to/output
+#   export SCRIPT_DIR=/path/to/scripts
+#   sbatch download_inphared.slurm
 
-# Set output directory - modify as needed
-OUTPUT_DIR="/data/lindseylm/INPHARED_DATA"
+# Check for required environment variables
+if [ -z "${OUTPUT_DIR}" ]; then
+    echo "Error: OUTPUT_DIR environment variable not set"
+    echo "Usage: export OUTPUT_DIR=/path/to/output && sbatch download_inphared.slurm"
+    exit 1
+fi
 
-# Path to the download script - modify as needed
-SCRIPT_DIR="/data/lindseylm/PROPHAGE_DETECTION_GENOME_BIOLOGY/lambda/05_metrics"
+if [ -z "${SCRIPT_DIR}" ]; then
+    echo "Error: SCRIPT_DIR environment variable not set"
+    echo "Usage: export SCRIPT_DIR=/path/to/scripts && sbatch download_inphared.slurm"
+    exit 1
+fi
 
 # Create output directory if it doesn't exist
 mkdir -p ${OUTPUT_DIR}
@@ -29,6 +40,7 @@ echo "INPHARED Database Download"
 echo "=========================================="
 echo "Start time: $(date)"
 echo "Output directory: ${OUTPUT_DIR}"
+echo "Script directory: ${SCRIPT_DIR}"
 echo "=========================================="
 
 # Load any required modules (uncomment/modify as needed)

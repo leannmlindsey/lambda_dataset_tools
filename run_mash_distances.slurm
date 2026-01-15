@@ -3,21 +3,35 @@
 #SBATCH --output=mash_dist_%j.out
 #SBATCH --error=mash_dist_%j.err
 #SBATCH --time=24:00:00
-#SBATCH --account=bfzj-dtai-gh
-#SBATCH --partition=ghx4
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=16g
-#SBATCH --gpus-per-node=1
+#
+# NOTE: Add your account and partition, e.g.:
+# #SBATCH --account=your_account
+# #SBATCH --partition=your_partition
 
-# Compute all-vs-all MASH distances for INPHARED genomes
+# Compute all-vs-all MASH distances
+#
+# Usage: Set MSH_FILE and OUTPUT_FILE environment variables, then submit:
+#   export MSH_FILE=/path/to/genomes.fa.msh
+#   export OUTPUT_FILE=/path/to/output_distances.tsv
+#   sbatch run_mash_distances.slurm
 
-# Set paths - modify as needed
-DATA_DIR="/u/llindsey1/llindsey/black_and_white/scripts/lambda_dataset_construction/data/inphared"
-MSH_FILE="${DATA_DIR}/14Apr2025_genomes.fa.msh"
-OUTPUT_FILE="${DATA_DIR}/14Apr2025_all_vs_all_distances.tsv"
+# Check for required environment variables
+if [ -z "${MSH_FILE}" ]; then
+    echo "Error: MSH_FILE environment variable not set"
+    echo "Usage: export MSH_FILE=/path/to/genomes.fa.msh && sbatch run_mash_distances.slurm"
+    exit 1
+fi
+
+if [ -z "${OUTPUT_FILE}" ]; then
+    echo "Error: OUTPUT_FILE environment variable not set"
+    echo "Usage: export OUTPUT_FILE=/path/to/distances.tsv && sbatch run_mash_distances.slurm"
+    exit 1
+fi
 
 echo "=========================================="
 echo "MASH All-vs-All Distance Calculation"
