@@ -184,7 +184,7 @@ def main():
         f.write(f"Source: {args.metadata}\n")
         f.write(f"Quality filters: completeness >= {args.min_completeness}%, contamination <= {args.max_contamination}%\n")
         f.write(f"Target genera: {args.n_genera}\n")
-        f.write(f"Selected genera: {n_genera}\n")
+        f.write(f"Selected genera: {len(selected_genera)}\n")
         f.write(f"Selected genomes: {len(selected_df)}\n")
         f.write(f"Split ratio: {args.split_ratio}\n")
         f.write(f"Seed: {args.seed}\n")
