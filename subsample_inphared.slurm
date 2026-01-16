@@ -1,4 +1,7 @@
 #!/bin/bash
+#SBATCH --account=bfzj-dtai-gh
+#SBATCH --partition=ghx4
+#SBATCH --gpus-per-node=1
 #SBATCH --job-name=inphared_subsample
 #SBATCH --output=inphared_subsample_%j.out
 #SBATCH --error=inphared_subsample_%j.err
@@ -7,10 +10,6 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=32g
-#
-# NOTE: Add your account and partition, e.g.:
-# #SBATCH --account=your_account
-# #SBATCH --partition=your_partition
 
 # Subsample segments from INPHARED phage genomes for train/dev/test splits
 #
@@ -23,12 +22,14 @@
 # Directory containing the scripts
 SCRIPT_DIR="/projects/bfzj/llindsey1/black_and_white/scripts/lambda_dataset_tools"
 
-# INPHARED dataset directory (contains accession lists and will receive output)
-INPHARED_DIR="/projects/bfzj/llindsey1/black_and_white/scripts/lambda_dataset_tools/inphared_dataset"
+# Input: INPHARED data directory (contains the genomes FASTA file)
+INPHARED_DATA="/u/llindsey1/llindsey/black_and_white/data/inphared"
+
+# Output: INPHARED dataset directory (contains accession lists and will receive output)
+INPHARED_DATASET="/projects/bfzj/llindsey1/black_and_white/scripts/lambda_dataset_tools/inphared_dataset"
 
 # Path to the INPHARED genomes FASTA file
-# Update this to match your actual filename (e.g., 14Apr2025_genomes.fa)
-GENOMES_FASTA="${INPHARED_DIR}/14Apr2025_genomes.fa"
+GENOMES_FASTA="${INPHARED_DATA}/14Apr2025_genomes.fa"
 
 # Subsampling parameters
 SEGMENT_LENGTH=2000
@@ -45,7 +46,8 @@ echo "INPHARED Segment Subsampling"
 echo "=========================================="
 echo "Start time: $(date)"
 echo "Script directory: ${SCRIPT_DIR}"
-echo "INPHARED directory: ${INPHARED_DIR}"
+echo "INPHARED data: ${INPHARED_DATA}"
+echo "Output directory: ${INPHARED_DATASET}"
 echo "Genomes FASTA: ${GENOMES_FASTA}"
 echo "Segment length: ${SEGMENT_LENGTH}"
 echo "Min genome length: ${MIN_LENGTH}"
@@ -70,9 +72,9 @@ for SPLIT in train dev test; do
     echo "Processing ${SPLIT} split..."
     echo "=========================================="
 
-    ACCESSION_FILE="${INPHARED_DIR}/${SPLIT}_accessions.txt"
-    OUTPUT_FASTA="${INPHARED_DIR}/${SPLIT}_segments.fasta"
-    OUTPUT_METADATA="${INPHARED_DIR}/${SPLIT}_segments.tsv"
+    ACCESSION_FILE="${INPHARED_DATASET}/${SPLIT}_accessions.txt"
+    OUTPUT_FASTA="${INPHARED_DATASET}/${SPLIT}_segments.fasta"
+    OUTPUT_METADATA="${INPHARED_DATASET}/${SPLIT}_segments.tsv"
 
     if [ ! -f "${ACCESSION_FILE}" ]; then
         echo "Warning: Accession file not found: ${ACCESSION_FILE}"
@@ -111,4 +113,4 @@ echo "=========================================="
 # List output files
 echo ""
 echo "Output files:"
-ls -lh ${INPHARED_DIR}/*_segments.fasta ${INPHARED_DIR}/*_segments.tsv 2>/dev/null
+ls -lh ${INPHARED_DATASET}/*_segments.fasta ${INPHARED_DATASET}/*_segments.tsv 2>/dev/null

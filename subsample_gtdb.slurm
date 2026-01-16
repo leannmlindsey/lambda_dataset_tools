@@ -1,4 +1,7 @@
 #!/bin/bash
+#SBATCH --account=bfzj-dtai-gh
+#SBATCH --partition=ghx4
+#SBATCH --gpus-per-node=1
 #SBATCH --job-name=gtdb_subsample
 #SBATCH --output=gtdb_subsample_%j.out
 #SBATCH --error=gtdb_subsample_%j.err
@@ -7,10 +10,6 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=64g
-#
-# NOTE: Add your account and partition, e.g.:
-# #SBATCH --account=your_account
-# #SBATCH --partition=your_partition
 
 # Subsample segments from GTDB bacterial genomes for train/dev/test splits
 #
