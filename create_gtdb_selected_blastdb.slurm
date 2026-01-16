@@ -26,8 +26,8 @@ GTDB_BASE="/u/llindsey1/llindsey/black_and_white/data/gtdb/fna/gtdb_genomes_reps
 # Accession list (all selected genomes)
 ACCESSION_LIST="/projects/bfzj/llindsey1/black_and_white/scripts/lambda_dataset_tools/gtdb_dataset/all_accessions.txt"
 
-# Output directory for BLAST database
-OUTPUT_DIR="/u/llindsey1/llindsey/black_and_white/data/gtdb/blastdb_selected"
+# Output directory for BLAST database (using /work/hdd for space)
+OUTPUT_DIR="/work/hdd/bfzj/llindsey1/gtdb_blastdb_selected"
 
 # Database name
 DB_NAME="gtdb_bacteria_selected"

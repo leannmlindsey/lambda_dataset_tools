@@ -23,8 +23,8 @@
 # GTDB base directory (contains database/GCA/... and database/GCF/... structure)
 GTDB_BASE="/u/llindsey1/llindsey/black_and_white/data/gtdb/fna/gtdb_genomes_reps_r226"
 
-# Output directory for BLAST database
-OUTPUT_DIR="/u/llindsey1/llindsey/black_and_white/data/gtdb/blastdb"
+# Output directory for BLAST database (using /work/hdd for space)
+OUTPUT_DIR="/work/hdd/bfzj/llindsey1/gtdb_blastdb"
 
 # Database name
 DB_NAME="gtdb_bacteria"
