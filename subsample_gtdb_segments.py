@@ -84,16 +84,36 @@ def parse_args():
     return parser.parse_args()
 
 
+def normalize_accession(accession):
+    """
+    Normalize GTDB accession to standard format (GCA_XXXXXXXXX.Y or GCF_XXXXXXXXX.Y).
+
+    GTDB metadata often has prefixes like:
+    - GB_GCA_000005845.2 -> GCA_000005845.2
+    - RS_GCF_000005845.2 -> GCF_000005845.2
+    """
+    # Strip common GTDB prefixes
+    if accession.startswith('GB_'):
+        accession = accession[3:]
+    elif accession.startswith('RS_'):
+        accession = accession[3:]
+    return accession
+
+
 def accession_to_path(gtdb_dir, accession):
     """
     Convert GTDB accession to file path.
 
     Example: GCA_964231105.1 -> /gtdb_dir/database/GCA/964/231/105/GCA_964231105.1_genomic.fna.gz
+    Also handles: GB_GCA_964231105.1 -> same path
     """
+    # Normalize accession (strip GB_/RS_ prefix if present)
+    accession = normalize_accession(accession)
+
     # Parse accession: GCA_XXXXXXXXX.Y or GCF_XXXXXXXXX.Y
     parts = accession.split('_')
     if len(parts) != 2:
-        return None
+        return None, None
 
     prefix = parts[0]  # GCA or GCF
     number_version = parts[1]  # XXXXXXXXX.Y
@@ -109,7 +129,7 @@ def accession_to_path(gtdb_dir, accession):
     # Build path
     fna_path = Path(gtdb_dir) / "database" / prefix / chunk1 / chunk2 / chunk3 / f"{accession}_genomic.fna.gz"
 
-    return fna_path
+    return fna_path, accession
 
 
 def get_random_nonoverlapping_positions(genome_length, n_samples, segment_length, rng, max_attempts=1000):
@@ -165,15 +185,18 @@ def process_genome(args_tuple):
     metadata = []
 
     # Find the file
-    fna_path = accession_to_path(gtdb_dir, accession)
+    fna_path, normalized_acc = accession_to_path(gtdb_dir, accession)
 
     if fna_path is None:
         return (accession, [], [], 'invalid_accession')
 
     if not fna_path.exists():
         # Try alternative: might be GCF instead of GCA or vice versa
-        alt_accession = accession.replace('GCA_', 'GCF_') if accession.startswith('GCA_') else accession.replace('GCF_', 'GCA_')
-        fna_path = accession_to_path(gtdb_dir, alt_accession)
+        if normalized_acc.startswith('GCA_'):
+            alt_accession = normalized_acc.replace('GCA_', 'GCF_')
+        else:
+            alt_accession = normalized_acc.replace('GCF_', 'GCA_')
+        fna_path, normalized_acc = accession_to_path(gtdb_dir, alt_accession)
         if fna_path is None or not fna_path.exists():
             return (accession, [], [], 'not_found')
 
@@ -258,6 +281,16 @@ def main():
         print(f"  Sample per: {args.sample_per_bp} bp")
     print(f"  Threads: {args.threads}")
     print(f"  Seed: {args.seed}")
+    print()
+
+    # Show sample path resolution for debugging
+    print("Sample path resolution (first 3 accessions):")
+    for acc in accessions[:3]:
+        fna_path, norm_acc = accession_to_path(args.gtdb_dir, acc)
+        exists = fna_path.exists() if fna_path else False
+        print(f"  {acc} -> {norm_acc}")
+        print(f"    Path: {fna_path}")
+        print(f"    Exists: {exists}")
     print()
 
     # Prepare arguments for each genome
