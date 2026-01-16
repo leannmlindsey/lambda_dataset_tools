@@ -40,10 +40,11 @@ MIN_LENGTH=5000
 SAMPLE_PER_BP=10000
 SEED=42
 
-# Optional: Set TOTAL_SEGMENTS to match phage segment count
-# Leave empty to use SAMPLE_PER_BP instead
-# TOTAL_SEGMENTS=20000
-TOTAL_SEGMENTS=""
+# Match bacterial segments to phage segment counts
+# These values should match the output from INPHARED subsampling
+TOTAL_SEGMENTS_TRAIN=27000
+TOTAL_SEGMENTS_DEV=3400
+TOTAL_SEGMENTS_TEST=3400
 
 # ============================================
 # END CONFIGURATION
@@ -59,11 +60,7 @@ echo "GTDB dataset directory: ${GTDB_DATASET_DIR}"
 echo "Threads: ${THREADS}"
 echo "Segment length: ${SEGMENT_LENGTH}"
 echo "Min genome length: ${MIN_LENGTH}"
-if [ -n "${TOTAL_SEGMENTS}" ]; then
-    echo "Total segments target: ${TOTAL_SEGMENTS}"
-else
-    echo "Sample per bp: ${SAMPLE_PER_BP}"
-fi
+echo "Target segments - Train: ${TOTAL_SEGMENTS_TRAIN}, Dev: ${TOTAL_SEGMENTS_DEV}, Test: ${TOTAL_SEGMENTS_TEST}"
 echo "Seed: ${SEED}"
 echo "=========================================="
 
@@ -77,13 +74,7 @@ fi
 # module load python/3.9
 # conda activate lambda_tools
 
-# Build the optional arguments
-EXTRA_ARGS=""
-if [ -n "${TOTAL_SEGMENTS}" ]; then
-    EXTRA_ARGS="--total-segments ${TOTAL_SEGMENTS}"
-fi
-
-# Process each split
+# Process each split with matched segment counts
 for SPLIT in train dev test; do
     echo ""
     echo "=========================================="
@@ -94,6 +85,15 @@ for SPLIT in train dev test; do
     OUTPUT_FASTA="${GTDB_DATASET_DIR}/${SPLIT}_segments.fasta"
     OUTPUT_METADATA="${GTDB_DATASET_DIR}/${SPLIT}_segments.tsv"
 
+    # Get the target segment count for this split
+    if [ "${SPLIT}" == "train" ]; then
+        TARGET_SEGMENTS=${TOTAL_SEGMENTS_TRAIN}
+    elif [ "${SPLIT}" == "dev" ]; then
+        TARGET_SEGMENTS=${TOTAL_SEGMENTS_DEV}
+    else
+        TARGET_SEGMENTS=${TOTAL_SEGMENTS_TEST}
+    fi
+
     if [ ! -f "${ACCESSION_FILE}" ]; then
         echo "Warning: Accession file not found: ${ACCESSION_FILE}"
         echo "Skipping ${SPLIT} split..."
@@ -102,6 +102,7 @@ for SPLIT in train dev test; do
 
     N_ACCESSIONS=$(wc -l < "${ACCESSION_FILE}")
     echo "Accession file: ${ACCESSION_FILE} (${N_ACCESSIONS} accessions)"
+    echo "Target segments: ${TARGET_SEGMENTS}"
     echo "Output FASTA: ${OUTPUT_FASTA}"
     echo "Output metadata: ${OUTPUT_METADATA}"
 
@@ -112,10 +113,9 @@ for SPLIT in train dev test; do
         --output-metadata "${OUTPUT_METADATA}" \
         --segment-length ${SEGMENT_LENGTH} \
         --min-length ${MIN_LENGTH} \
-        --sample-per-bp ${SAMPLE_PER_BP} \
         --threads ${THREADS} \
         --seed ${SEED} \
-        ${EXTRA_ARGS}
+        --total-segments ${TARGET_SEGMENTS}
 
     if [ $? -eq 0 ]; then
         echo "${SPLIT} split completed successfully!"
