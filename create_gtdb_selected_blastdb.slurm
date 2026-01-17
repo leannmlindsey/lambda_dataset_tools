@@ -87,7 +87,8 @@ accession_to_path() {
     local number=${rest%%.*}
 
     # Pad to 9 digits and split into chunks
-    number=$(printf "%09d" ${number})
+    # Use 10# to force decimal interpretation (avoid octal issues with leading zeros)
+    number=$(printf "%09d" $((10#${number})))
     local chunk1=${number:0:3}
     local chunk2=${number:3:3}
     local chunk3=${number:6:3}
