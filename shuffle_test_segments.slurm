@@ -1,10 +1,15 @@
 #!/bin/bash
+#SBATCH --account=bfzj-dtai-gh
+#SBATCH --partition=ghx4
+#SBATCH --gpus-per-node=1
 #SBATCH --job-name=shuffle_segments
 #SBATCH --output=shuffle_segments_%j.out
 #SBATCH --error=shuffle_segments_%j.err
 #SBATCH --time=01:00:00
-#SBATCH --mem=8G
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
+#SBATCH --mem=32g
 
 # Shuffle test segments for GC-content control benchmark
 # This creates shuffled versions of test_segments.fasta files
