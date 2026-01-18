@@ -10,15 +10,19 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=32g
-#SBATCH --array=1-1493%50
+#SBATCH --array=1-100%20
 
-# Run Bakta annotation on bacterial test genomes
+# Run Bakta annotation on taxonomically balanced bacterial subset
 #
 # This is an array job that processes each genome in parallel.
-# Array size = number of test genomes (1,493)
-# %50 limits to 50 concurrent jobs
+# Array size = 100 (taxonomically balanced subset)
+# %20 limits to 20 concurrent jobs
 #
-# Usage: sbatch run_bakta_bacteria.slurm
+# Prerequisites: Run select_bacteria_only_balanced.slurm first to create the accession list
+#
+# Usage:
+#   conda activate bakta_env
+#   sbatch run_bakta_bacteria.slurm
 
 # ============================================
 # CONFIGURATION
@@ -26,8 +30,8 @@
 
 SCRIPT_DIR="/projects/bfzj/llindsey1/black_and_white/scripts/lambda_dataset_tools"
 
-# Test accessions list
-ACCESSION_LIST="${SCRIPT_DIR}/gtdb_dataset_filtered_v3/test_accessions.txt"
+# Taxonomically balanced 100 bacteria accession list
+ACCESSION_LIST="${SCRIPT_DIR}/bacteria_only_dataset/bacteria_only_100_accessions.txt"
 
 # GTDB genome directory
 GTDB_BASE="/projects/bfzj/llindsey1/black_and_white/data/gtdb/fna/gtdb_genomes_reps_r226"
