@@ -28,7 +28,7 @@ OUTPUT_DIR="/work/hdd/bfzj/llindsey1/unmapped_blast_results"
 
 # BLAST databases
 PHAGE_DB="/u/llindsey1/llindsey/black_and_white/data/inphared/blastdb/inphared_phages"
-BACTERIA_DB="/work/hdd/bfzj/llindsey1/gtdb_blastdb"
+BACTERIA_DB="/work/hdd/bfzj/llindsey1/gtdb_blastdb/gtdb_bacteria"
 # Subsampling: number of reads to take from EACH file
 READS_PER_FILE=10000
 
