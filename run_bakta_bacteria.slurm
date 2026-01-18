@@ -112,17 +112,17 @@ mkdir -p "${GENOME_OUTPUT}"
 
 echo "Running Bakta..."
 
-# Load modules (adjust as needed for your cluster)
-module load anaconda3
-conda activate bakta_env  # Adjust to your Bakta environment name
+# Note: Conda environment is inherited from submission environment on Delta
+# Submit with: conda activate bakta_env && sbatch run_bakta_bacteria.slurm
 
-# Run Bakta
+# Run Bakta (--force to overwrite if exists)
 bakta \
     --db "${BAKTA_DB}" \
     --output "${GENOME_OUTPUT}" \
     --prefix "${ACCESSION}" \
     --threads ${THREADS} \
     --keep-contig-headers \
+    --force \
     "${TEMP_DIR}/${GENOME_BASENAME}"
 
 BAKTA_EXIT=$?
