@@ -15,10 +15,10 @@
 | Description | Path |
 |-------------|------|
 | Base directory | `/projects/bfzj/llindsey1/black_and_white/data/gtdb/` |
-| Taxonomy files | `/projects/bfzj/llindsey1/black_and_white/data/gtdb/taxonomy/` |
+| Metadata directory | `/projects/bfzj/llindsey1/black_and_white/data/gtdb/metadata/` |
 | Genome FNA files | `/projects/bfzj/llindsey1/black_and_white/data/gtdb/fna/` |
 | Representative genomes | `/projects/bfzj/llindsey1/black_and_white/data/gtdb/fna/gtdb_genomes_reps_r226/` |
-| Metadata file | `/projects/bfzj/llindsey1/black_and_white/data/gtdb/taxonomy/bac120_metadata.tsv` |
+| Metadata file | `/projects/bfzj/llindsey1/black_and_white/data/gtdb/metadata/bac120_metadata.tsv` |
 
 ---
 

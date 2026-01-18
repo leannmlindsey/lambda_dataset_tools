@@ -26,7 +26,7 @@
 SCRIPT_DIR="/projects/bfzj/llindsey1/black_and_white/scripts/lambda_dataset_tools"
 
 # Source data
-GTDB_METADATA="/projects/bfzj/llindsey1/black_and_white/data/gtdb/taxonomy/bac120_metadata.tsv"
+GTDB_METADATA="/projects/bfzj/llindsey1/black_and_white/data/gtdb/metadata/bac120_metadata.tsv"
 
 # Fine-tuning dataset directory (contains train/dev/test_accessions.txt)
 FINETUNING_DIR="${SCRIPT_DIR}/gtdb_dataset_filtered_v3"

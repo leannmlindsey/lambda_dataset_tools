@@ -19,7 +19,7 @@ SCRIPT_DIR="/projects/bfzj/llindsey1/black_and_white/scripts/lambda_dataset_tool
 
 # Input
 ACCESSIONS="${SCRIPT_DIR}/gtdb_dataset_filtered_v3/test_accessions.txt"
-METADATA="/projects/bfzj/llindsey1/black_and_white/data/gtdb/taxonomy/bac120_metadata.tsv"
+METADATA="/projects/bfzj/llindsey1/black_and_white/data/gtdb/metadata/bac120_metadata.tsv"
 
 # Output
 OUTPUT_DIR="${SCRIPT_DIR}/bacteria_only_dataset"
