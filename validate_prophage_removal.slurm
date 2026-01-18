@@ -172,12 +172,36 @@ echo "  Filtered BLAST hits: $(wc -l < ${BLAST_FILTERED})"
 echo ""
 echo "Step 4: Analyzing validation results..."
 
-# Count unique phages and genomes with hits
+RAW_HITS=$(wc -l < ${BLAST_RAW})
+FILTERED_HITS=$(wc -l < ${BLAST_FILTERED})
+
+echo ""
+echo "  Raw BLAST hits (all):        ${RAW_HITS}"
+echo "  Filtered hits (≥${MIN_ALIGNMENT_LENGTH}bp, ≥${MIN_IDENTITY}%): ${FILTERED_HITS}"
+
+# Analyze alignment length distribution of RAW hits
+echo ""
+echo "  Alignment length distribution (raw hits):"
+echo "    <100bp:    $(awk '$4 < 100' ${BLAST_RAW} | wc -l)"
+echo "    100-199bp: $(awk '$4 >= 100 && $4 < 200' ${BLAST_RAW} | wc -l)"
+echo "    200-499bp: $(awk '$4 >= 200 && $4 < 500' ${BLAST_RAW} | wc -l)"
+echo "    500-999bp: $(awk '$4 >= 500 && $4 < 1000' ${BLAST_RAW} | wc -l)"
+echo "    ≥1000bp:   $(awk '$4 >= 1000' ${BLAST_RAW} | wc -l)"
+
+# Check max alignment length in raw hits
+if [ ${RAW_HITS} -gt 0 ]; then
+    MAX_LEN=$(cut -f4 ${BLAST_RAW} | sort -n | tail -1)
+    echo ""
+    echo "  Maximum alignment length in raw hits: ${MAX_LEN} bp"
+fi
+
+# Count unique phages and genomes with filtered hits
 PHAGES_WITH_HITS=$(cut -f1 ${BLAST_FILTERED} | sort -u | wc -l)
 CONTIGS_WITH_HITS=$(cut -f2 ${BLAST_FILTERED} | sort -u | wc -l)
 
-echo "  Unique phages with hits in clean DB: ${PHAGES_WITH_HITS}"
-echo "  Unique contigs with hits: ${CONTIGS_WITH_HITS}"
+echo ""
+echo "  Unique phages with hits (≥${MIN_ALIGNMENT_LENGTH}bp): ${PHAGES_WITH_HITS}"
+echo "  Unique contigs with hits (≥${MIN_ALIGNMENT_LENGTH}bp): ${CONTIGS_WITH_HITS}"
 
 # ============================================
 # STEP 5: Compare with original results
@@ -208,21 +232,25 @@ echo "  Unique phages with hits: ${PHAGES_WITH_HITS}"
 echo "  Unique contigs with hits: ${CONTIGS_WITH_HITS}"
 echo ""
 
+echo "Interpretation:"
+echo ""
 if [ ${NEW_HITS} -eq 0 ]; then
-    echo "SUCCESS: No prophage hits found in clean genomes!"
-    echo "The filtering worked perfectly."
-elif [ ${NEW_HITS} -lt 100 ]; then
-    echo "GOOD: Very few hits remaining (${NEW_HITS})."
-    echo "This may be due to similar sequences in different genomes."
+    echo "  SUCCESS: No hits ≥${MIN_ALIGNMENT_LENGTH}bp found in clean genomes!"
+    echo "  The filtering worked correctly - all long prophage matches were removed."
 else
-    REDUCTION=$(echo "scale=1; (1 - ${NEW_HITS} / ${ORIGINAL_HITS}) * 100" | bc)
-    echo "WARNING: ${NEW_HITS} hits still found."
-    echo "Reduction: ${REDUCTION}%"
-    echo ""
-    echo "This could indicate:"
-    echo "  - Similar prophage sequences in different genomes"
-    echo "  - Hits below original threshold that now pass"
-    echo "  - Possible issues with the filtering"
+    echo "  WARNING: ${NEW_HITS} hits ≥${MIN_ALIGNMENT_LENGTH}bp still found."
+    echo "  This may indicate issues with the filtering process."
+fi
+echo ""
+echo "  Note: Short hits (<${MIN_ALIGNMENT_LENGTH}bp) are expected and acceptable."
+echo "  These represent partial/weak similarities that don't indicate prophages."
+echo ""
+if [ ${RAW_HITS} -gt 0 ]; then
+    echo "  Raw hits found: ${RAW_HITS} (includes short alignments)"
+    echo "  Max alignment in clean genomes: ${MAX_LEN} bp"
+    if [ ${MAX_LEN} -lt ${MIN_ALIGNMENT_LENGTH} ]; then
+        echo "  VERIFIED: Maximum alignment (${MAX_LEN}bp) < threshold (${MIN_ALIGNMENT_LENGTH}bp)"
+    fi
 fi
 
 # Save summary
