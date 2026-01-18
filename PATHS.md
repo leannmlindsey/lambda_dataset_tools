@@ -81,7 +81,7 @@
 | Accession list | `/projects/bfzj/llindsey1/black_and_white/scripts/lambda_dataset_tools/gtdb_dataset_filtered_v3/test_accessions.txt` |
 | Full genomes | `/projects/bfzj/llindsey1/black_and_white/data/gtdb/fna/gtdb_genomes_reps_r226/` |
 | Bakta annotations | `/projects/bfzj/llindsey1/black_and_white/scripts/lambda_dataset_tools/bacteria_only_annotations/` |
-| Bakta database | `/projects/bfzj/llindsey1/bakta_db/db` (UPDATE if different) |
+| Bakta database | `/u/llindsey1/scratch/bakta_db/db` |
 
 ---
 

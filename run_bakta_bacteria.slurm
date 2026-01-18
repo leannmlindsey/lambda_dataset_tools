@@ -32,8 +32,8 @@ ACCESSION_LIST="${SCRIPT_DIR}/gtdb_dataset_filtered_v3/test_accessions.txt"
 # GTDB genome directory
 GTDB_BASE="/projects/bfzj/llindsey1/black_and_white/data/gtdb/fna/gtdb_genomes_reps_r226"
 
-# Bakta database path (UPDATE THIS to your Bakta database location)
-BAKTA_DB="/projects/bfzj/llindsey1/bakta_db/db"
+# Bakta database path
+BAKTA_DB="/u/llindsey1/scratch/bakta_db/db"
 
 # Output directory
 OUTPUT_DIR="${SCRIPT_DIR}/bacteria_only_annotations"
