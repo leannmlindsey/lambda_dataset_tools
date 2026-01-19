@@ -12,13 +12,13 @@
 #SBATCH --mem=32g
 #SBATCH --array=1-100%20
 
-# Run Bakta annotation on taxonomically balanced bacterial subset
+# Run Bakta annotation on prophage-free bacterial subset
 #
 # This is an array job that processes each genome in parallel.
-# Array size = 100 (taxonomically balanced subset)
+# Array size = 100 (prophage-free bacteria with ZERO phage BLAST hits)
 # %20 limits to 20 concurrent jobs
 #
-# Prerequisites: Run select_bacteria_only_balanced.slurm first to create the accession list
+# Prerequisites: Run select_prophage_free_bacteria.sh first to create the accession list
 #
 # Usage:
 #   conda activate bakta_env
@@ -30,8 +30,8 @@
 
 SCRIPT_DIR="/projects/bfzj/llindsey1/black_and_white/scripts/lambda_dataset_tools"
 
-# Taxonomically balanced 100 bacteria accession list
-ACCESSION_LIST="${SCRIPT_DIR}/bacteria_only_dataset/bacteria_only_100_accessions.txt"
+# Prophage-free 100 bacteria accession list (ZERO phage BLAST hits)
+ACCESSION_LIST="${SCRIPT_DIR}/bacteria_only_prophage_free/prophage_free_100_accessions.txt"
 
 # GTDB genome directory
 GTDB_BASE="/projects/bfzj/llindsey1/black_and_white/data/gtdb/fna/gtdb_genomes_reps_r226"
