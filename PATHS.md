@@ -123,6 +123,18 @@
 | Full genomes | `/projects/bfzj/llindsey1/black_and_white/data/gtdb/fna/gtdb_genomes_reps_r226/` | - |
 | Bakta annotations | `bacteria_only_annotations/` | `run_bakta_bacteria.slurm` |
 
+### 6.3 Bacterial CDS Benchmark (Verified Non-Phage)
+| Description | Path | Created by |
+|-------------|------|------------|
+| CDS 500-2000bp | `bacteria_cds_benchmark/bacterial_cds_2k.csv` | `extract_bacterial_cds.sh` |
+| CDS 1000-4000bp | `bacteria_cds_benchmark/bacterial_cds_4k.csv` | `extract_bacterial_cds.sh` |
+| CDS 2000-8000bp | `bacteria_cds_benchmark/bacterial_cds_8k.csv` | `extract_bacterial_cds.sh` |
+
+**Filtering criteria:**
+- Excludes CDS with phage-related annotations (capsid, tail, integrase, etc.)
+- Excludes CDS overlapping BLAST hits (≥90% identity AND ≥200bp)
+- CSV format: `segment_id, sequence, label (0), source, product, length`
+
 ---
 
 ## 7. Merged Datasets

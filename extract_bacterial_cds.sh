@@ -58,14 +58,14 @@ python ${SCRIPT_DIR}/extract_bacterial_cds.py \
     --min-blast-length 200
 
 echo ""
-echo "=== Extracting CDS (all sizes: 200-8000bp) ==="
+echo "=== Extracting CDS (8k range: 2000-8000bp) ==="
 python ${SCRIPT_DIR}/extract_bacterial_cds.py \
     --annotations-dir "${ANNOTATIONS_DIR}" \
     --accessions "${ACCESSIONS}" \
-    --output "${OUTPUT_DIR}/bacterial_cds_all.csv" \
-    --min-length 200 \
+    --output "${OUTPUT_DIR}/bacterial_cds_8k.csv" \
+    --min-length 2000 \
     --max-length 8000 \
-    --max-per-genome 100 \
+    --max-per-genome 20 \
     --blast-results "${BLAST_RESULTS}" \
     --min-identity 90 \
     --min-blast-length 200

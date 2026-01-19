@@ -117,13 +117,27 @@ conda install -c conda-forge -c bioconda \
 | `select_bacteria_only_balanced.slurm` | SLURM job for balanced selection |
 | `test_bakta_single.slurm` | Test Bakta on single genome before full run |
 | `run_bakta_bacteria.slurm` | Run Bakta annotation on 100 bacteria |
+| `extract_bacterial_cds.py` | Extract non-phage CDS from Bakta annotations |
+| `extract_bacterial_cds.sh` | Create bacterial CDS benchmark dataset |
+| `copy_pharokka_test_annotations.sh` | Copy Pharokka annotations for test phages |
+| `extract_benchmark_genomes.sh` | Extract full genomes for benchmarks |
 
-### Dataset Merging
+### Dataset Merging & Training CSV Creation
 
 | Script | Description |
 |--------|-------------|
 | `merge_and_shuffle.py` | Merge phage/bacteria segments with labels |
-| `merge_datasets.slurm` | SLURM job for merging all segment lengths |
+| `merge_datasets.slurm` | SLURM job for merging (filtered + unfiltered) |
+| `create_training_csv.py` | Convert FASTA + labels to training CSV |
+| `create_all_training_csvs.sh` | Create CSVs for all merged datasets |
+| `create_gc_control_csvs.sh` | Create CSVs for GC-shuffled controls |
+
+### Final Packaging
+
+| Script | Description |
+|--------|-------------|
+| `create_lambda_final.sh` | Create tar.gz archives for Zenodo upload |
+| `remove_contaminated_segments.sh` | Remove remaining contaminated segments |
 
 ### Analysis & Evaluation
 
@@ -214,48 +228,67 @@ sbatch run_bakta_bacteria.slurm
 ## Dataset Structure
 
 ```
+# Merged datasets with training CSVs ✓ READY FOR TRAINING
+merged_datasets_filtered/            # INPHARED + GTDB filtered (recommended)
+├── 2k/
+│   ├── train.csv                    # segment_id, sequence, label (0/1), source
+│   ├── dev.csv
+│   └── test.csv
+├── 4k/
+└── 8k/
+
+merged_datasets_unfiltered/          # INPHARED + GTDB unfiltered (for comparison)
+├── 2k/, 4k/, 8k/
+
+# GC-content control with CSVs
+shuffled_gc_control/
+├── gc_control_2k_test.csv           # Combined shuffled phage + bacteria
+├── inphared_2k_test_shuffled.csv    # Shuffled phage only
+├── gtdb_2k_test_shuffled.csv        # Shuffled bacteria only
+└── ... (same for 4k, 8k)
+
+# Bacterial CDS benchmark (verified non-phage)
+bacteria_cds_benchmark/
+├── bacterial_cds_2k.csv             # CDS 500-2000bp, no phage overlap
+├── bacterial_cds_4k.csv             # CDS 1000-4000bp, no phage overlap
+└── bacterial_cds_8k.csv             # CDS 2000-8000bp, no phage overlap
+
 # Phage segments (INPHARED)
 inphared_dataset/                    # 2k segments
 ├── train_accessions.txt
-├── dev_accessions.txt
 ├── test_accessions.txt
 ├── train_segments.fasta
-├── dev_segments.fasta
-├── test_segments.fasta
-└── train_segments.tsv
-
+└── test_segments.fasta
 inphared_dataset_4k/                 # 4k segments
 inphared_dataset_8k/                 # 8k segments
 
-# Bacteria segments - FILTERED (prophage-free) ✓ RECOMMENDED
+# Bacteria segments - FILTERED (prophage-free)
 gtdb_dataset_filtered_v3/            # 2k segments
 ├── train_accessions.txt
-├── dev_accessions.txt
-├── test_accessions.txt
 ├── contaminated_accessions.txt      # Removed genomes
-├── train_segments.fasta
-├── dev_segments.fasta
-└── test_segments.fasta
-
+└── train_segments.fasta
 gtdb_dataset_filtered_v3_4k/         # 4k segments
 gtdb_dataset_filtered_v3_8k/         # 8k segments
 
-# GC-content control (shuffled)
-shuffled_gc_control/
-├── inphared_2k_test_shuffled.fasta
-├── gtdb_2k_test_shuffled.fasta
-└── ...
+# Benchmark genomes + annotations
+phage_only_genomes/
+└── phage_only_869_genomes.fasta
+phage_only_annotations/              # Pharokka output for test phages
 
-# Bacteria-only annotation dataset
-bacteria_only_dataset/
-├── bacteria_only_100_accessions.txt
-└── bacteria_only_100_metadata.tsv
-
+bacteria_only_genomes/
+└── bacteria_only_100_genomes.fasta
 bacteria_only_annotations/           # Bakta output
 └── {accession}/
     ├── {accession}.gff3
-    ├── {accession}.faa
-    └── ...
+    └── {accession}.faa
+
+# Final packaged archives
+lambda_final/
+├── merged_filtered.tar.gz
+├── merged_unfiltered.tar.gz
+├── gc_control_shuffled.tar.gz
+├── lambda_metadata.tar.gz
+└── ...
 ```
 
 ---
