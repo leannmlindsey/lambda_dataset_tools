@@ -108,18 +108,36 @@ def load_accessions(accessions_file):
     return accessions, original_to_normalized, normalized_to_original
 
 
-def find_genomes_with_hits(blast_file, contig_to_genome):
-    """Find all genomes that have ANY BLAST hits."""
+def find_genomes_with_hits(blast_file, contig_to_genome, min_identity=90.0, min_length=200):
+    """Find genomes that have BLAST hits meeting quality thresholds.
+
+    Only counts genomes with at least one hit that has:
+    - identity >= min_identity (default 90%)
+    - alignment length >= min_length (default 200bp)
+
+    BLAST output format 6 columns:
+    0: qseqid, 1: sseqid, 2: pident, 3: length, 4: mismatch, 5: gapopen,
+    6: qstart, 7: qend, 8: sstart, 9: send, 10: evalue, 11: bitscore
+    """
     genomes_with_hits = set()
 
     with open(blast_file, 'r') as f:
         for line in f:
             parts = line.strip().split('\t')
-            if len(parts) >= 2:
+            if len(parts) >= 4:
                 # Column 2 is the subject (bacterial contig)
                 contig = parts[1]
-                if contig in contig_to_genome:
-                    genomes_with_hits.add(contig_to_genome[contig])
+
+                try:
+                    identity = float(parts[2])  # percent identity
+                    length = int(parts[3])      # alignment length
+                except (ValueError, IndexError):
+                    continue
+
+                # Only count if meets quality thresholds
+                if identity >= min_identity and length >= min_length:
+                    if contig in contig_to_genome:
+                        genomes_with_hits.add(contig_to_genome[contig])
 
     return genomes_with_hits
 
@@ -281,10 +299,14 @@ def main():
     # Create set of normalized accessions for comparison
     all_accessions_normalized = set(orig_to_norm.values())
 
-    # Find genomes with ANY BLAST hits (these are in normalized format from contig map)
+    # Find genomes with significant BLAST hits (≥90% identity AND ≥200bp)
+    MIN_IDENTITY = 90.0
+    MIN_LENGTH = 200
     print(f"\nScanning BLAST results from {args.blast_results}...")
-    genomes_with_hits = find_genomes_with_hits(args.blast_results, contig_to_genome)
-    print(f"  Found {len(genomes_with_hits):,} unique genomes with at least one phage hit")
+    print(f"  Filtering: identity ≥{MIN_IDENTITY}% AND length ≥{MIN_LENGTH}bp")
+    genomes_with_hits = find_genomes_with_hits(args.blast_results, contig_to_genome,
+                                                min_identity=MIN_IDENTITY, min_length=MIN_LENGTH)
+    print(f"  Found {len(genomes_with_hits):,} unique genomes with significant phage hits")
 
     # Debug: show sample accessions
     print(f"\n  Sample genomes with hits: {list(genomes_with_hits)[:3]}")
