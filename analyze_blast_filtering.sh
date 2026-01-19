@@ -3,8 +3,8 @@
 #
 # Usage: bash analyze_blast_filtering.sh
 
-# Validation BLAST results
-BLAST_FILE="/work/hdd/bfzj/llindsey1/prophage_validation_v3/blast_results_validation.tsv"
+# Validation BLAST results (raw, before filtering)
+BLAST_FILE="/work/hdd/bfzj/llindsey1/prophage_validation_v3/validation_blast_raw.tsv"
 
 echo "=========================================="
 echo "BLAST Filtering Analysis"

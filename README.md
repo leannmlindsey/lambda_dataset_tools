@@ -1,35 +1,55 @@
 # LAMBDA Dataset Construction Tools
 
-Tools for constructing the LAMBDA ( LAnguage Model Bacteriophage Detection Assessment) benchmark datasets for prophage detection in bacterial hosts using genomic language models.
+Tools for constructing the LAMBDA (LAnguage Model Bacteriophage Detection Assessment) benchmark datasets for evaluating genomic language models on prophage detection tasks.
 
 ## Overview
 
 This repository contains scripts for:
 - Downloading and processing INPHARED phage genome database
 - Selecting and filtering GTDB bacterial representative genomes
+- **Removing prophage-contaminated bacterial genomes** (BLAST-based filtering)
 - Creating balanced phage/bacterial datasets with cluster-aware train/dev/test splits
 - Subsampling genome segments for language model training (2k, 4k, 8k lengths)
-- Merging and shuffling phage/bacteria datasets for classification
-- Generating shuffled control sequences
-- Creating BLAST databases for prophage detection/removal
-- Calculating prophage prediction metrics
+- Generating GC-content control sequences (shuffled nucleotides)
+- Creating taxonomically balanced annotation datasets (Phage-Only, Bacteria-Only)
+
+> **See [`PATHS.md`](PATHS.md) for a comprehensive reference of all data paths and file locations.**
+
+## Quick Start
+
+```bash
+# 1. Create phage segments (already done)
+sbatch subsample_inphared.slurm
+
+# 2. Create prophage-filtered bacterial segments (recommended)
+sbatch blast_phage_vs_gtdb_selected_v3.slurm  # BLAST phages vs bacteria
+sbatch filter_and_subsample_gtdb_v3.slurm     # Filter and subsample
+
+# 3. Validate prophage removal
+sbatch validate_prophage_removal_v3.slurm
+
+# 4. Create GC-content controls
+sbatch shuffle_test_segments.slurm
+
+# 5. Create annotation datasets for benchmarking
+sbatch select_bacteria_only_balanced.slurm    # Select 100 balanced bacteria
+sbatch run_bakta_bacteria.slurm               # Annotate with Bakta
+```
 
 ## Installation
 
 ### Prerequisites
 - Python 3.8+
 - Conda or Mamba package manager
+- BLAST+ (for prophage filtering)
+- Bakta (for bacterial annotation)
 
 ### Create Conda Environment
 
 ```bash
-# Create new environment
 conda create -n lambda_tools python=3.10 -y
-
-# Activate environment
 conda activate lambda_tools
 
-# Install required packages
 conda install -c conda-forge -c bioconda \
     pandas \
     biopython \
@@ -37,337 +57,258 @@ conda install -c conda-forge -c bioconda \
     numpy \
     blast \
     -y
-
-# Or install via pip (except BLAST which requires conda/bioconda)
-pip install pandas biopython matplotlib numpy
 ```
 
-### Verify Installation
+---
 
-```bash
-python -c "import pandas; import Bio; import matplotlib; import numpy; print('All packages installed successfully!')"
-```
+## Scripts Reference
 
-## Scripts
-
-### Data Download
+### Data Download & Selection
 
 | Script | Description |
 |--------|-------------|
 | `download_inphared.py` | Download INPHARED phage genome database |
-| `download_inphared.slurm` | SLURM job script for downloading INPHARED |
+| `extract_representatives.py` | Extract INPHARED cluster representatives, split into train/dev/test |
+| `select_gtdb_representatives.py` | Select GTDB bacterial genomes with quality/taxonomic filtering |
 
-### Dataset Selection
-
-| Script | Description |
-|--------|-------------|
-| `extract_representatives.py` | Extract INPHARED cluster representatives and split into train/dev/test |
-| `select_gtdb_representatives.py` | Select GTDB bacterial genomes with quality filtering and taxonomic subsampling |
-
-### Segment Processing
+### Segment Subsampling
 
 | Script | Description |
 |--------|-------------|
-| `subsample_segments.py` | Subsample segments from INPHARED genomes (multi-FASTA input) |
-| `subsample_gtdb_segments.py` | Subsample segments from GTDB genomes (handles nested dirs and gzipped files) |
-| `subsample_inphared.slurm` | SLURM job for INPHARED 2k segment subsampling (train/dev/test) |
-| `subsample_gtdb.slurm` | SLURM job for GTDB 2k segment subsampling (train/dev/test) |
-| `subsample_inphared_4k.slurm` | SLURM job for INPHARED 4k segment subsampling |
-| `subsample_inphared_8k.slurm` | SLURM job for INPHARED 8k segment subsampling |
-| `subsample_gtdb_4k.slurm` | SLURM job for GTDB 4k segment subsampling |
-| `subsample_gtdb_8k.slurm` | SLURM job for GTDB 8k segment subsampling |
+| `subsample_segments.py` | Subsample segments from INPHARED genomes |
+| `subsample_gtdb_segments.py` | Subsample segments from GTDB genomes (handles nested dirs) |
+| `subsample_inphared.slurm` | SLURM job for INPHARED 2k segments |
+| `subsample_inphared_4k.slurm` | SLURM job for INPHARED 4k segments |
+| `subsample_inphared_8k.slurm` | SLURM job for INPHARED 8k segments |
+| `subsample_gtdb.slurm` | SLURM job for GTDB 2k segments (original, with prophage) |
+| `subsample_gtdb_4k.slurm` | SLURM job for GTDB 4k segments (original) |
+| `subsample_gtdb_8k.slurm` | SLURM job for GTDB 8k segments (original) |
 
-### Dataset Merging
-
-| Script | Description |
-|--------|-------------|
-| `merge_and_shuffle.py` | Merge phage/bacteria segments and shuffle with labels |
-| `merge_datasets.slurm` | SLURM job for merging all segment lengths (2k, 4k, 8k) |
-
-### Control Sequences
+### Prophage Filtering (v3 - Recommended)
 
 | Script | Description |
 |--------|-------------|
-| `shuffle_cds_nucleotides.py` | Shuffle nucleotides within CDS regions to create control sequences |
-| `shuffle_cds.slurm` | SLURM job for creating shuffled control sequences |
+| `blast_phage_vs_gtdb_selected_v3.slurm` | BLAST INPHARED vs GTDB (max_target_seqs=2000) |
+| `filter_and_subsample_gtdb_v3.slurm` | Filter contaminated genomes, subsample 2k/4k/8k |
+| `validate_prophage_removal_v3.slurm` | Validate no prophage sequences remain |
+| `create_contig_to_genome_map.py` | Map BLAST contig IDs to genome accessions |
+| `create_contig_map.slurm` | SLURM job for contig mapping |
 
 ### BLAST Database Creation
 
 | Script | Description |
 |--------|-------------|
-| `create_phage_blastdb.slurm` | Create BLAST database from all INPHARED phage genomes |
-| `create_gtdb_blastdb.slurm` | Create BLAST database from all GTDB bacterial genomes (~136k) |
-| `create_gtdb_selected_blastdb.slurm` | Create BLAST database from selected GTDB genomes (~16k) |
+| `create_phage_blastdb.slurm` | Create BLAST database from INPHARED phages |
+| `create_gtdb_blastdb.slurm` | Create BLAST database from all GTDB bacteria |
+| `create_gtdb_selected_blastdb.slurm` | Create BLAST database from selected GTDB (~16k) |
 
-### Evaluation
+### GC-Content Control
 
 | Script | Description |
 |--------|-------------|
-| `calculate_prophage_metrics.py` | Calculate nucleotide-level TP/TN/FP/FN, Precision, Recall, F1, MCC |
-| `plot_processing_time.py` | Generate bar plots of processing times |
+| `shuffle_segments.py` | Shuffle nucleotides within segments (preserves GC) |
+| `shuffle_test_segments.slurm` | Create shuffled test segments for GC control |
+
+### Benchmark-Specific Datasets
+
+| Script | Description |
+|--------|-------------|
+| `select_bacteria_only_balanced.py` | Select 100 taxonomically balanced bacteria |
+| `select_bacteria_only_balanced.slurm` | SLURM job for balanced selection |
+| `test_bakta_single.slurm` | Test Bakta on single genome before full run |
+| `run_bakta_bacteria.slurm` | Run Bakta annotation on 100 bacteria |
+
+### Dataset Merging
+
+| Script | Description |
+|--------|-------------|
+| `merge_and_shuffle.py` | Merge phage/bacteria segments with labels |
+| `merge_datasets.slurm` | SLURM job for merging all segment lengths |
+
+### Analysis & Evaluation
+
+| Script | Description |
+|--------|-------------|
+| `analyze_blast_filtering.sh` | Analyze BLAST filtering steps in detail |
+| `investigate_missed_hits.sh` | Investigate remaining prophage hits |
+| `calculate_prophage_metrics.py` | Calculate TP/TN/FP/FN, Precision, Recall, F1 |
+| `compare_accessions_v2.sh` | Compare original vs contaminated accessions |
 
 ### Clustering (Optional)
 
 | Script | Description |
 |--------|-------------|
-| `run_mash_distances.slurm` | SLURM job for computing MASH all-vs-all distances |
+| `run_mash_distances.slurm` | Compute MASH all-vs-all distances |
 | `cluster_mash_distances.py` | Cluster genomes based on MASH distances |
 
-## Usage
+---
 
-### 1. Download INPHARED Database
+## Workflow
 
-```bash
-python download_inphared.py \
-    --output ./inphared_data \
-    --category all \
-    --decompress
-```
-
-### 2. Create Phage Dataset (INPHARED)
+### Step 1: Create Phage Dataset
 
 ```bash
-# Extract cluster representatives and split
+# Extract cluster representatives from vclust output
 python extract_representatives.py \
-    --clusters vclust_info.tsv \
+    --clusters /path/to/vclust_info.tsv \
     --output ./inphared_dataset \
     --split-ratio 80:10:10 \
     --seed 42
+
+# Subsample segments at 2k, 4k, 8k
+sbatch subsample_inphared.slurm
+sbatch subsample_inphared_4k.slurm
+sbatch subsample_inphared_8k.slurm
 ```
 
-### 3. Create Bacterial Dataset (GTDB)
+### Step 2: Create Prophage-Filtered Bacterial Dataset (Recommended)
 
 ```bash
-# Select high-quality representatives, one per genus
-python select_gtdb_representatives.py \
-    --metadata bac120_metadata.tsv \
-    --output ./gtdb_dataset \
-    --min-completeness 95 \
-    --max-contamination 5 \
-    --seed 42
+# 1. BLAST all phages against selected bacteria (max_target_seqs=2000)
+sbatch blast_phage_vs_gtdb_selected_v3.slurm
+
+# 2. Filter contaminated genomes and subsample segments
+sbatch filter_and_subsample_gtdb_v3.slurm
+
+# 3. Validate prophage removal
+sbatch validate_prophage_removal_v3.slurm
 ```
 
-### 4. Subsample Segments
+**Filtering Parameters:**
+- Min alignment length: ≥200 bp
+- Min identity: ≥90%
+- max_target_seqs: 2000
 
-Use the SLURM scripts to subsample segments for all splits (train/dev/test):
+**Results (v3):**
+- Original genomes: 15,865
+- Contaminated (removed): 971 (6.1%)
+- Clean (retained): 14,894 (93.9%)
+
+### Step 3: Create GC-Content Control Dataset
 
 ```bash
-# INPHARED phage segments (2k, 4k, or 8k)
-sbatch subsample_inphared.slurm      # 2k segments
-sbatch subsample_inphared_4k.slurm   # 4k segments
-sbatch subsample_inphared_8k.slurm   # 8k segments
-
-# GTDB bacterial segments (matched to phage counts)
-# First, update TOTAL_SEGMENTS_* in the scripts to match INPHARED output
-sbatch subsample_gtdb.slurm          # 2k segments
-sbatch subsample_gtdb_4k.slurm       # 4k segments
-sbatch subsample_gtdb_8k.slurm       # 8k segments
+sbatch shuffle_test_segments.slurm
 ```
 
-Or run manually:
+This shuffles nucleotides within each test segment, preserving GC content but destroying sequence patterns.
 
+### Step 4: Create Annotation Datasets for Benchmarking
+
+**Phage-Only:** Uses test set genomes (869) with Pharokka annotations (already available).
+
+**Bacteria-Only:**
 ```bash
-# Phage segments (1 per 10kb)
-python subsample_segments.py \
-    --input-fasta 14Apr2025_genomes.fa \
-    --accession-list ./inphared_dataset/train_accessions.txt \
-    --output ./inphared_dataset/train_segments.fasta \
-    --output-metadata ./inphared_dataset/train_segments.tsv \
-    --segment-length 2000 \
-    --min-length 5000 \
-    --sample-per-bp 10000 \
-    --seed 42
+# Select 100 taxonomically balanced bacteria
+sbatch select_bacteria_only_balanced.slurm
 
-# Bacterial segments (matched to phage count using --total-segments)
-python subsample_gtdb_segments.py \
-    --gtdb-dir /path/to/gtdb/fna/gtdb_genomes_reps_r226 \
-    --accession-list ./gtdb_dataset/train_accessions.txt \
-    --output ./gtdb_dataset/train_segments.fasta \
-    --output-metadata ./gtdb_dataset/train_segments.tsv \
-    --total-segments 27000 \
-    --threads 16 \
-    --seed 42
+# Test Bakta on one genome first
+conda activate bakta_env
+sbatch test_bakta_single.slurm
+
+# Run Bakta on all 100
+sbatch run_bakta_bacteria.slurm
 ```
 
-### 5. Merge and Shuffle Datasets
-
-Combine phage and bacteria segments into labeled datasets for classification:
-
-```bash
-# Merge all segment lengths (2k, 4k, 8k) for train/dev/test
-sbatch merge_datasets.slurm
-
-# Or run manually for a single dataset
-python merge_and_shuffle.py \
-    --phage-fasta ./inphared_dataset/train_segments.fasta \
-    --bacteria-fasta ./gtdb_dataset/train_segments.fasta \
-    --output-fasta ./merged_datasets/2k/train_merged.fasta \
-    --output-labels ./merged_datasets/2k/train_labels.tsv \
-    --seed 42
-```
-
-### 6. Create Shuffled Controls
-
-Create negative control sequences by shuffling nucleotides within CDS regions:
-
-```bash
-sbatch shuffle_cds.slurm
-
-# Or run manually
-python shuffle_cds_nucleotides.py \
-    --input-dir ./pharokka_annotations \
-    --accession-list ./inphared_dataset/all_representatives.txt \
-    --output-dir ./shuffled_genomes \
-    --shuffle-intergenic \
-    --seed 42
-```
-
-### 7. Create BLAST Databases
-
-Create BLAST databases for sequence similarity searches:
-
-```bash
-# INPHARED phage database
-sbatch create_phage_blastdb.slurm
-
-# GTDB bacterial database (selected genomes only, ~60-80 GB)
-sbatch create_gtdb_selected_blastdb.slurm
-
-# GTDB bacterial database (all representatives, ~1+ TB)
-sbatch create_gtdb_blastdb.slurm
-```
-
-### 8. Remove Prophages from Bacterial Dataset (Optional)
-
-To create a "prophage-free" bacterial dataset, BLAST INPHARED sequences against the selected GTDB database and remove any bacterial genomes with significant hits:
-
-```bash
-# BLAST all INPHARED phages against selected GTDB bacteria
-blastn \
-    -db /path/to/gtdb/blastdb_selected/gtdb_bacteria_selected \
-    -query /path/to/inphared/14Apr2025_genomes.fa \
-    -out prophage_hits.txt \
-    -outfmt 6 \
-    -evalue 1e-10 \
-    -num_threads 16
-
-# Parse results to identify bacterial genomes with prophage hits
-# Remove those accessions from the GTDB accession lists
-# Re-run subsampling on the filtered dataset
-```
-
-### 9. Evaluate Predictions
-
-```bash
-python calculate_prophage_metrics.py \
-    --ground-truth ground_truth.csv \
-    --predictions predictions.csv \
-    --fasta-dir ./genome_fastas \
-    --output results.csv
-```
+---
 
 ## Dataset Structure
 
-After running the pipeline, you will have:
-
 ```
-inphared_dataset/                 # 2k segments (default)
-├── train_accessions.txt          # Training genome accessions
-├── dev_accessions.txt            # Development genome accessions
-├── test_accessions.txt           # Test genome accessions
-├── all_representatives.txt       # All selected accessions
-├── train_segments.fasta          # 2000nt training segments
-├── dev_segments.fasta            # 2000nt development segments
-├── test_segments.fasta           # 2000nt test segments
-├── train_segments.tsv            # Segment metadata
-└── summary.txt                   # Dataset statistics
-
-inphared_dataset_4k/              # 4k segments
-├── train_segments.fasta
-├── dev_segments.fasta
-└── test_segments.fasta
-
-inphared_dataset_8k/              # 8k segments
-├── train_segments.fasta
-├── dev_segments.fasta
-└── test_segments.fasta
-
-gtdb_dataset/                     # 2k segments (default)
+# Phage segments (INPHARED)
+inphared_dataset/                    # 2k segments
 ├── train_accessions.txt
 ├── dev_accessions.txt
 ├── test_accessions.txt
-├── all_accessions.txt
 ├── train_segments.fasta
 ├── dev_segments.fasta
 ├── test_segments.fasta
-├── all_metadata.tsv              # Full metadata for selected genomes
-└── summary.txt
+└── train_segments.tsv
 
-gtdb_dataset_4k/                  # 4k segments
-gtdb_dataset_8k/                  # 8k segments
+inphared_dataset_4k/                 # 4k segments
+inphared_dataset_8k/                 # 8k segments
 
-merged_datasets/                  # Combined phage + bacteria
-├── 2k/
-│   ├── train_merged.fasta        # Shuffled phage + bacteria segments
-│   ├── train_labels.tsv          # Labels (segment_id, label, source)
-│   ├── dev_merged.fasta
-│   ├── dev_labels.tsv
-│   ├── test_merged.fasta
-│   └── test_labels.tsv
-├── 4k/
-└── 8k/
+# Bacteria segments - FILTERED (prophage-free) ✓ RECOMMENDED
+gtdb_dataset_filtered_v3/            # 2k segments
+├── train_accessions.txt
+├── dev_accessions.txt
+├── test_accessions.txt
+├── contaminated_accessions.txt      # Removed genomes
+├── train_segments.fasta
+├── dev_segments.fasta
+└── test_segments.fasta
 
-shuffled_genomes/                 # Control sequences
-├── <accession>_shuffled.fasta    # Shuffled CDS nucleotides
-└── shuffle_summary.txt
+gtdb_dataset_filtered_v3_4k/         # 4k segments
+gtdb_dataset_filtered_v3_8k/         # 8k segments
 
-blastdb/                          # BLAST databases
-├── inphared_phages.*             # INPHARED phage database
-├── gtdb_bacteria.*               # All GTDB bacteria (if created)
-└── gtdb_bacteria_selected.*      # Selected GTDB bacteria
+# GC-content control (shuffled)
+shuffled_gc_control/
+├── inphared_2k_test_shuffled.fasta
+├── gtdb_2k_test_shuffled.fasta
+└── ...
+
+# Bacteria-only annotation dataset
+bacteria_only_dataset/
+├── bacteria_only_100_accessions.txt
+└── bacteria_only_100_metadata.tsv
+
+bacteria_only_annotations/           # Bakta output
+└── {accession}/
+    ├── {accession}.gff3
+    ├── {accession}.faa
+    └── ...
 ```
+
+---
 
 ## Key Parameters
 
 ### Segment Subsampling
-- `--segment-length`: Length of each segment (default: 2000 bp)
+- `--segment-length`: Length of each segment (2000, 4000, or 8000 bp)
 - `--min-length`: Minimum genome length to include (default: 5000 bp)
 - `--sample-per-bp`: Take 1 sample per N bp (default: 10000)
 - `--total-segments`: Target total segments (for balancing datasets)
 
-### Quality Filtering (GTDB only)
+### Quality Filtering (GTDB)
 - `--min-completeness`: Minimum CheckM2 completeness (default: 95%)
 - `--max-contamination`: Maximum CheckM2 contamination (default: 5%)
+
+### Prophage Filtering
+- Min alignment length: ≥200 bp
+- Min identity: ≥90%
+- BLAST max_target_seqs: 2000
 
 ### Data Splitting
 - `--split-ratio`: Train:dev:test ratio (default: 80:10:10)
 - `--seed`: Random seed for reproducibility (default: 42)
 
+---
+
 ## Data Leakage Prevention
 
 - **Phage**: Split by vclust cluster (95% ANI) - no cluster spans multiple splits
 - **Bacteria**: Split by GTDB genus - no genus spans multiple splits
+- **Prophage removal**: BLAST-based filtering ensures bacterial segments don't contain phage sequences
 
-## GTDB File Structure
+---
 
-GTDB genomes are stored in a nested directory structure with gzipped files:
+## Dataset Statistics
 
-```
-gtdb_genomes_reps_r226/
-└── database/
-    ├── GCA/
-    │   └── XXX/XXX/XXX/
-    │       └── GCA_XXXXXXXXX.1_genomic.fna.gz
-    └── GCF/
-        └── XXX/XXX/XXX/
-            └── GCF_XXXXXXXXX.1_genomic.fna.gz
-```
+| Dataset | Train | Dev | Test | Genomes Used |
+|---------|------:|----:|-----:|-------------:|
+| **Phage (INPHARED)** | 27,661 | 3,703 | 3,427 | 7,044 |
+| **Bacteria (filtered v3)** | 27,000 | 3,400 | 3,400 | 14,894 |
 
-The `subsample_gtdb_segments.py` script handles:
-- Converting accessions to file paths (e.g., `GB_GCA_964231105.1` → `database/GCA/964/231/105/GCA_964231105.1_genomic.fna.gz`)
-- Stripping `GB_` and `RS_` prefixes from GTDB accessions
-- Reading gzipped files directly without decompression to disk
-- Parallel processing with configurable thread count
+---
+
+## File Paths
+
+See [`PATHS.md`](PATHS.md) for a comprehensive reference of all data paths, including:
+- Source data locations (INPHARED, GTDB)
+- BLAST database paths
+- Generated dataset directories
+- Intermediate/working files
+
+---
 
 ## Citation
 
@@ -380,7 +321,3 @@ If you use these tools or the LAMBDA benchmark, please cite:
 ## License
 
 [License to be added]
-
-## Contact
-
-[Contact information to be added]
