@@ -49,20 +49,20 @@ while read -r ACCESSION; do
     # Skip empty lines
     [ -z "${ACCESSION}" ] && continue
 
-    # Check for pharokka output directory for this accession
-    # Pharokka typically creates a directory per genome
-    PHAROKKA_ACCESSION_DIR="${PHAROKKA_DIR}/${ACCESSION}"
+    # Remove version number if present (e.g., MH572370.1 -> MH572370)
+    ACCESSION_BASE=$(echo "${ACCESSION}" | sed 's/\.[0-9]*$//')
 
-    if [ -d "${PHAROKKA_ACCESSION_DIR}" ]; then
-        cp -r "${PHAROKKA_ACCESSION_DIR}" "${OUTPUT_DIR}/"
+    # Look for files matching {ACCESSION}_genome.* pattern
+    FILES=$(ls "${PHAROKKA_DIR}/${ACCESSION_BASE}_genome."* 2>/dev/null)
+
+    if [ -n "${FILES}" ]; then
+        cp ${PHAROKKA_DIR}/${ACCESSION_BASE}_genome.* "${OUTPUT_DIR}/"
         ((COPIED++))
     else
-        # Try without version number (e.g., NC_001416 instead of NC_001416.1)
-        ACCESSION_BASE=$(echo "${ACCESSION}" | sed 's/\.[0-9]*$//')
-        PHAROKKA_ACCESSION_DIR="${PHAROKKA_DIR}/${ACCESSION_BASE}"
-
-        if [ -d "${PHAROKKA_ACCESSION_DIR}" ]; then
-            cp -r "${PHAROKKA_ACCESSION_DIR}" "${OUTPUT_DIR}/"
+        # Also try with full accession (with version)
+        FILES=$(ls "${PHAROKKA_DIR}/${ACCESSION}_genome."* 2>/dev/null)
+        if [ -n "${FILES}" ]; then
+            cp ${PHAROKKA_DIR}/${ACCESSION}_genome.* "${OUTPUT_DIR}/"
             ((COPIED++))
         else
             echo "  Missing: ${ACCESSION}"
@@ -82,13 +82,13 @@ echo ""
 echo "Output directory: ${OUTPUT_DIR}"
 echo ""
 
-# List what was copied
-if [ ${COPIED} -gt 0 ]; then
-    echo "Contents:"
-    ls "${OUTPUT_DIR}" | head -20
-    if [ $(ls "${OUTPUT_DIR}" | wc -l) -gt 20 ]; then
-        echo "... and $(($(ls "${OUTPUT_DIR}" | wc -l) - 20)) more"
-    fi
+# Count files copied
+if [ -d "${OUTPUT_DIR}" ]; then
+    FILE_COUNT=$(ls "${OUTPUT_DIR}" | wc -l)
+    echo "Total files in output: ${FILE_COUNT}"
+    echo ""
+    echo "Sample files:"
+    ls "${OUTPUT_DIR}" | head -10
 fi
 
 echo ""
