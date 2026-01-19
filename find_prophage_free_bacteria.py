@@ -67,6 +67,15 @@ def parse_args():
     return parser.parse_args()
 
 
+def normalize_accession(acc):
+    """Normalize accession by removing GB_/RS_ prefix."""
+    if acc.startswith('GB_'):
+        return acc[3:]  # Remove GB_
+    elif acc.startswith('RS_'):
+        return acc[3:]  # Remove RS_
+    return acc
+
+
 def load_contig_map(contig_map_file):
     """Load contig to genome mapping."""
     contig_to_genome = {}
@@ -74,19 +83,29 @@ def load_contig_map(contig_map_file):
         for line in f:
             parts = line.strip().split('\t')
             if len(parts) >= 2:
+                # Skip header
+                if parts[0] == 'contig_id' or parts[1] == 'genome_accession':
+                    continue
                 contig_to_genome[parts[0]] = parts[1]
     return contig_to_genome
 
 
 def load_accessions(accessions_file):
-    """Load accession list."""
+    """Load accession list and return both original and normalized versions."""
     accessions = set()
+    original_to_normalized = {}
+    normalized_to_original = {}
+
     with open(accessions_file, 'r') as f:
         for line in f:
             acc = line.strip()
             if acc:
                 accessions.add(acc)
-    return accessions
+                normalized = normalize_accession(acc)
+                original_to_normalized[acc] = normalized
+                normalized_to_original[normalized] = acc
+
+    return accessions, original_to_normalized, normalized_to_original
 
 
 def find_genomes_with_hits(blast_file, contig_to_genome):
@@ -106,8 +125,14 @@ def find_genomes_with_hits(blast_file, contig_to_genome):
 
 
 def load_metadata(metadata_file, accessions_of_interest):
-    """Load GTDB metadata for accessions of interest."""
+    """Load GTDB metadata for accessions of interest.
+
+    accessions_of_interest should be in original format (with GB_/RS_ prefix).
+    """
     metadata = {}
+
+    # Create normalized versions for matching
+    accessions_normalized = {normalize_accession(acc): acc for acc in accessions_of_interest}
 
     with open(metadata_file, 'r') as f:
         header = f.readline().strip().split('\t')
@@ -121,13 +146,22 @@ def load_metadata(metadata_file, accessions_of_interest):
 
         for line in f:
             parts = line.strip().split('\t')
+            if len(parts) <= acc_idx:
+                continue
             acc = parts[acc_idx]
 
-            # GTDB accessions have RS_ or GB_ prefix, our accessions might not
-            acc_clean = acc.replace('RS_', '').replace('GB_', '')
+            # GTDB metadata uses GB_/RS_ prefix
+            acc_normalized = normalize_accession(acc)
 
-            if acc in accessions_of_interest or acc_clean in accessions_of_interest:
-                taxonomy = parts[tax_idx] if tax_idx else ""
+            # Check if this accession is in our set of interest
+            original_acc = None
+            if acc in accessions_of_interest:
+                original_acc = acc
+            elif acc_normalized in accessions_normalized:
+                original_acc = accessions_normalized[acc_normalized]
+
+            if original_acc:
+                taxonomy = parts[tax_idx] if tax_idx and len(parts) > tax_idx else ""
 
                 # Parse taxonomy to get phylum
                 phylum = ""
@@ -138,14 +172,27 @@ def load_metadata(metadata_file, accessions_of_interest):
                             phylum = part[3:]
                             break
 
-                metadata[acc_clean] = {
-                    'accession': acc_clean,
+                try:
+                    completeness = float(parts[comp_idx]) if comp_idx and len(parts) > comp_idx and parts[comp_idx] else 0
+                except:
+                    completeness = 0
+                try:
+                    contamination = float(parts[cont_idx]) if cont_idx and len(parts) > cont_idx and parts[cont_idx] else 0
+                except:
+                    contamination = 0
+                try:
+                    genome_size = int(parts[size_idx]) if size_idx and len(parts) > size_idx and parts[size_idx] else 0
+                except:
+                    genome_size = 0
+
+                metadata[original_acc] = {
+                    'accession': original_acc,
                     'full_accession': acc,
                     'taxonomy': taxonomy,
                     'phylum': phylum,
-                    'completeness': float(parts[comp_idx]) if comp_idx and parts[comp_idx] else 0,
-                    'contamination': float(parts[cont_idx]) if cont_idx and parts[cont_idx] else 0,
-                    'genome_size': int(parts[size_idx]) if size_idx and parts[size_idx] else 0
+                    'completeness': completeness,
+                    'contamination': contamination,
+                    'genome_size': genome_size
                 }
 
     return metadata
@@ -228,16 +275,35 @@ def main():
 
     # Load accessions to consider
     print(f"\nLoading accessions from {args.accessions}...")
-    all_accessions = load_accessions(args.accessions)
+    all_accessions, orig_to_norm, norm_to_orig = load_accessions(args.accessions)
     print(f"  Loaded {len(all_accessions):,} accessions")
 
-    # Find genomes with ANY BLAST hits
+    # Create set of normalized accessions for comparison
+    all_accessions_normalized = set(orig_to_norm.values())
+
+    # Find genomes with ANY BLAST hits (these are in normalized format from contig map)
     print(f"\nScanning BLAST results from {args.blast_results}...")
     genomes_with_hits = find_genomes_with_hits(args.blast_results, contig_to_genome)
-    print(f"  Found {len(genomes_with_hits):,} genomes with at least one phage hit")
+    print(f"  Found {len(genomes_with_hits):,} unique genomes with at least one phage hit")
 
-    # Find prophage-free genomes (no hits at all)
-    prophage_free = all_accessions - genomes_with_hits
+    # Debug: show sample accessions
+    print(f"\n  Sample genomes with hits: {list(genomes_with_hits)[:3]}")
+    print(f"  Sample test accessions (normalized): {list(all_accessions_normalized)[:3]}")
+
+    # Find overlap between genomes with hits and our test set
+    test_with_hits = all_accessions_normalized & genomes_with_hits
+    print(f"  Test genomes with phage hits: {len(test_with_hits):,}")
+
+    # Find prophage-free genomes using normalized accessions
+    # genomes_with_hits are in GCA_/GCF_ format, all_accessions_normalized is also in that format
+    prophage_free_normalized = all_accessions_normalized - genomes_with_hits
+
+    # Convert back to original format
+    prophage_free = set()
+    for norm_acc in prophage_free_normalized:
+        if norm_acc in norm_to_orig:
+            prophage_free.add(norm_to_orig[norm_acc])
+
     print(f"\nProphage-free genomes (ZERO hits): {len(prophage_free):,}")
     print(f"  ({len(prophage_free)/len(all_accessions)*100:.1f}% of test set)")
 
