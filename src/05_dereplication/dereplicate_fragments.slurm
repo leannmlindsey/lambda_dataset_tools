@@ -24,8 +24,10 @@
 # fragments, so leakage must be removed at the fragment level.
 
 set -euo pipefail
-HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "${HERE}/../config.sh"
+# SLURM copies this script to a spool dir, so $0/BASH_SOURCE cannot locate the
+# repo. Source config by absolute path (override with LAMBDA_CONFIG if cloned
+# elsewhere); config.sh then defines SRC_DIR and all other absolute paths.
+source "${LAMBDA_CONFIG:-/projects/bfzj/llindsey1/black_and_white/scripts/lambda_dataset_tools/src/config.sh}"
 
 source ~/.bashrc
 conda activate "${CONDA_ENV}"
@@ -78,7 +80,7 @@ for DATASET in "${DATASETS[@]}"; do
             -evalue 1e-5 \
             -num_threads "${THREADS}"
 
-        python "${HERE}/filter_leaked_fragments.py" \
+        python "${SRC_DIR}/05_dereplication/filter_leaked_fragments.py" \
             --query-fasta "${QUERY_FASTA}" \
             --blast-output "${BLAST_OUT}" \
             --output-fasta "${DEREP_DIR}/${SPLIT}_segments.fasta" \

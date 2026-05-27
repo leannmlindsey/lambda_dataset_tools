@@ -18,8 +18,10 @@
 # which the subsampling step (04) consumes for all of 2k/4k/8k.
 
 set -euo pipefail
-HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "${HERE}/../config.sh"
+# SLURM copies this script to a spool dir, so $0/BASH_SOURCE cannot locate the
+# repo. Source config by absolute path (override with LAMBDA_CONFIG if cloned
+# elsewhere); config.sh then defines SRC_DIR and all other absolute paths.
+source "${LAMBDA_CONFIG:-/projects/bfzj/llindsey1/black_and_white/scripts/lambda_dataset_tools/src/config.sh}"
 
 source ~/.bashrc
 conda activate "${CONDA_ENV}"
@@ -35,7 +37,7 @@ echo "  split:   ${SPLIT_RATIO}   seed: ${SEED}"
 echo "  start:   $(date)"
 echo "=========================================="
 
-python "${HERE}/extract_representatives.py" \
+python "${SRC_DIR}/01_phage_selection/extract_representatives.py" \
     --clusters "${INPHARED_VCLUST}" \
     --output "${OUTPUT_DIR}" \
     --split-ratio "${SPLIT_RATIO}" \
