@@ -49,10 +49,9 @@ echo "=========================================="
 JID_PHAGE_SELECT="$(submit 01_phage_selection \
     "${SRC_DIR}/01_phage_selection/01_extract_representatives.slurm")"
 
-# ---- 02  Bacteria selection (GTDB HQ reps, 1/genus) ------------------------
-# TODO(port): pending review fixes (independent RNG per genus). Then:
-# JID_BACT_SELECT="$(submit 02_bacteria_selection \
-#     "${SRC_DIR}/02_bacteria_selection/02_select_gtdb.slurm")"
+# ---- 02  Bacteria selection (GTDB HQ reps, 1/genus, all ~15,865 genera) -----
+JID_BACT_SELECT="$(submit 02_bacteria_selection \
+    "${SRC_DIR}/02_bacteria_selection/02_select_gtdb.slurm")"
 
 # ---- 03  Prophage filtering (+ planned geNomad masking) --------------------
 # TODO(port): BLAST phages vs bacteria; mask/remove prophage regions.

@@ -79,6 +79,8 @@ export PYTHONHASHSEED=0
 : "${SPLIT_RATIO:=80:10:10}"          # train:dev:test, applied at cluster/genus level
 : "${GTDB_MIN_COMPLETENESS:=95.0}"    # CheckM2
 : "${GTDB_MAX_CONTAMINATION:=5.0}"    # CheckM2
+# Step 02 output: selected bacterial accessions + metadata (one per genus, all genera)
+: "${GTDB_SELECTION_DIR:=${DATA_DIR}/gtdb_selection}"
 
 # ----------------------------------------------------------------------------
 # Segment subsampling

@@ -129,7 +129,25 @@ def main():
              "would keep them via a draft fallback)")
         emit("  examples: " + ", ".join(lost[:15]) + (" ..." if len(lost) > 15 else ""))
 
-    # Contiguity descriptors, if present, to sanity-check chromosome-only sampling.
+    # Genera retained if we require at least one genome whose longest contig is
+    # long enough to sample from (longest_contig >= threshold). This is the
+    # diversity cost of a minimum-contig-length floor in sampling (step 04);
+    # expected to be ~0 given the median longest contig is ~360 kb. Plasmid
+    # removal is handled by geNomad classification (step 03), NOT by length.
+    if "longest_contig" in df.columns:
+        lc = pd.to_numeric(df["longest_contig"], errors="coerce")
+        emit("")
+        emit("Genera retained by minimum longest-contig length (sampling-floor cost):")
+        emit(f"{'min longest_contig':<22}{'genomes':>10}{'genera':>9}{'%genera':>9}{'lost':>8}")
+        emit("-" * 61)
+        for thresh in (2000, 4000, 8000, 10000, 16000, 50000, 100000):
+            mask = lc >= thresh
+            genera = df[mask]["genus"].nunique()
+            pct = (genera / n_base * 100) if n_base else 0.0
+            emit(f"{('>= ' + format(thresh, ',') + ' bp'):<22}"
+                 f"{int(mask.sum()):>10,}{genera:>9,}{pct:>8.1f}%{n_base - genera:>8,}")
+
+    # Contiguity descriptors, to sanity-check fragment sampling feasibility.
     for col in ("contig_count", "n50_contigs", "longest_contig"):
         if col in df.columns:
             s = pd.to_numeric(df[col], errors="coerce")

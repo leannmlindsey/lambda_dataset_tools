@@ -1,6 +1,6 @@
 # Step 02 — Bacteria selection
 
-**Status:** ⏳ to port
+**Status:** ✅ ported (all genera, RNG fix, provenance metadata)
 
 **Purpose:** Select GTDB bacterial representatives passing CheckM2 quality,
 one genome per genus, split train/dev/test by genus.
@@ -16,16 +16,18 @@ one genome per genus, split train/dev/test by genus.
   threaded across draws (was `random_state=SEED` reused per genus → not
   independent).
 
-**Decided:**
-- Negatives are **chromosome-only** (plasmids/secondary contigs excluded; see
-  step 04). This is only sound for closed/isolate genomes, so selection must
-  control assembly contiguity — CheckM2 completeness ≠ single-contig assembly.
+**Decided (retention analysis ran — see `contiguity_retention_report.txt`):**
+- Keep the **FULL HQ set**: completeness ≥95%, contamination ≤5%, one per genus →
+  **all ~15,865 genera**. NO complete/isolate/contiguity filter at selection.
+  Rationale: the HQ set is 86% draft MAGs (median longest contig ~360 kb), so
+  requiring complete isolates would drop genera 15,865 → ~2,251 (−86%). Because we
+  sample only short fragments, assembly *contiguity* is irrelevant to *fragment*
+  quality — quality is controlled downstream (steps 03/04), not by completeness.
+- Add `ncbi_assembly_level`, `ncbi_genome_category`, `contig_count`, `n50_contigs`,
+  `longest_contig` to the output metadata for provenance.
+- Plasmids are **retained** (valid bacterial negatives); no plasmid-removal step
+  anywhere. Phage-like content is removed by the step-03 phage BLAST.
 
 **Pending before porting:**
-- Run `analyze_bacteria_contiguity.py` on the real `bac120_metadata.tsv` to get
-  genus-retention numbers, then add an isolate/assembly-level filter
-  (`ncbi_genome_category` excludes MAG/SAG; `ncbi_assembly_level`) at the chosen
-  cutoff. Add `ncbi_assembly_level`, `ncbi_genome_category`, `contig_count` to
-  the output metadata for provenance.
 - Document the one-per-genus design (flattens abundance; tilts toward rare/
   uncultured genera) as an explicit, justified choice.
