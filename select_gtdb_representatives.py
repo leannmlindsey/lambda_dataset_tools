@@ -11,6 +11,7 @@ Strategy:
 
 import argparse
 import random
+import numpy as np
 import pandas as pd
 from collections import defaultdict
 from pathlib import Path
@@ -111,12 +112,16 @@ def main():
         selected_genera = random.sample(unique_genera, args.n_genera)
         print(f"\n  Randomly selected {len(selected_genera)} genera")
 
-    # Get one genome per selected genus
+    # Get one genome per selected genus.
+    # Use a single seeded RNG threaded across all draws so the per-genus picks
+    # are mutually independent. Previously random_state=args.seed was reused on
+    # every genus, which is reproducible but draws the same relative position
+    # each time rather than sampling independently.
+    rng = np.random.RandomState(args.seed)
     selected_genomes = []
     for genus in selected_genera:
         genus_genomes = df_hq[df_hq['genus'] == genus]
-        # Pick one randomly
-        selected = genus_genomes.sample(n=1, random_state=args.seed).iloc[0]
+        selected = genus_genomes.sample(n=1, random_state=rng).iloc[0]
         selected_genomes.append(selected)
 
     selected_df = pd.DataFrame(selected_genomes)

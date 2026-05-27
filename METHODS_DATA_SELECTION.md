@@ -24,7 +24,7 @@ The LAMBDA benchmark datasets were constructed to train and evaluate genomic lan
 
 ### Clustering
 - **Method**: vclust clustering at approximately 95% average nucleotide identity (ANI)
-- **Representatives**: 8,684 cluster representatives (first genome in each cluster designated as representative)
+- **Representatives**: 8,684 cluster representatives (one genome per cluster selected at random, seeded, rather than by within-cluster ordering)
 - **No quality filtering**: INPHARED genomes are curated complete phage genomes; no additional CheckM-based filtering was applied
 
 ### Inclusion Criteria
@@ -73,19 +73,26 @@ No cluster/genus overlap exists between splits, verified programmatically after 
 Genomic language models typically operate on fixed-length input sequences. To create training examples while fairly representing genomes of varying sizes:
 
 ### Phage Segment Sampling
-- **Segment length**: 2,000 nucleotides
-- **Sampling rate**: 1 segment per 10,000 bp of genome length
-- **Minimum segments**: 1 per genome (for genomes 5-10 kb)
-- **Exclusion**: Genomes < 5,000 bp excluded
-- **Placement**: Random, non-overlapping positions within each genome
-- **Coverage**: ~20% of each genome sampled
+Three parallel segment datasets were produced at segment lengths of 2,000, 4,000, and 8,000 bp.
 
-| Genome Size | Segments | Coverage |
-|-------------|----------|----------|
-| 5-10 kb | 1 | ~20% |
-| 30 kb (avg) | 3 | ~20% |
-| 100 kb | 10 | ~20% |
-| 200 kb (jumbo) | 20 | ~20% |
+- **Segment lengths**: 2,000 / 4,000 / 8,000 nucleotides (three separate datasets)
+- **Segment count per genome**: `floor(genome_length / 10,000)`, with a minimum of 1 segment for any genome at or above the minimum length. The 10,000 bp rate sets *how many* segments are taken; it does **not** partition the genome into fixed 10 kb windows.
+- **Minimum genome length**: 5,000 bp for the 2k and 4k datasets; **10,000 bp for the 8k dataset**. Genomes below the threshold are excluded, so the 8k dataset is built from a slightly smaller set of genomes than 2k/4k.
+- **Placement**: For each segment, a start position is drawn uniformly at random across the *entire* genome and accepted only if it does not overlap a previously placed segment (rejection sampling, up to 1,000 attempts per segment). Segments within a genome are therefore guaranteed non-overlapping but are scattered randomly, not anchored to consecutive bins.
+- **Coverage**: Because the segment count is fixed at `floor(length / 10,000)` regardless of segment size, genome coverage scales with segment length:
+
+| Segment length | Approx. coverage per genome |
+|----------------|-----------------------------|
+| 2k | ~20% |
+| 4k | ~40% |
+| 8k | ~80% |
+
+| Genome Size | Segments (any length) |
+|-------------|-----------------------|
+| 5-10 kb | 1 (2k/4k only; excluded from 8k) |
+| 30 kb (avg) | 3 |
+| 100 kb | 10 |
+| 200 kb (jumbo) | 20 |
 
 ### Bacterial Segment Sampling
 - **Segment length**: 2,000 nucleotides
