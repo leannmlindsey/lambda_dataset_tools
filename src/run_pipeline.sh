@@ -53,10 +53,14 @@ JID_PHAGE_SELECT="$(submit 01_phage_selection \
 JID_BACT_SELECT="$(submit 02_bacteria_selection \
     "${SRC_DIR}/02_bacteria_selection/02_select_gtdb.slurm")"
 
-# ---- 03  Prophage filtering (+ planned geNomad masking) --------------------
-# TODO(port): BLAST phages vs bacteria; mask/remove prophage regions.
-# JID_PROPHAGE="$(submit 03_prophage_filtering \
-#     "${SRC_DIR}/03_prophage_filtering/03_prophage_filter.slurm" "${JID_BACT_SELECT}")"
+# ---- 03  Prophage BLAST (build DB -> BLAST array -> postprocess) ------------
+# Alignment-based, INPHARED-only; produces per-contig masked intervals for step 04.
+JID_BACTERIA_DB="$(submit 03a_bacteria_blastdb \
+    "${SRC_DIR}/03_prophage_filtering/03a_create_bacteria_blastdb.slurm" "${JID_BACT_SELECT}")"
+JID_PHAGE_BLAST="$(submit 03b_phage_vs_bacteria \
+    "${SRC_DIR}/03_prophage_filtering/03b_blast_phage_vs_bacteria.slurm" "${JID_BACTERIA_DB}")"
+JID_PROPHAGE="$(submit 03c_postprocess \
+    "${SRC_DIR}/03_prophage_filtering/03c_postprocess_blast.slurm" "${JID_PHAGE_BLAST}")"
 
 # ---- 04  Subsampling (phage + bacteria segments, 2k/4k/8k) -----------------
 # TODO(port): fixes = all-contig sampling, reproducible per-accession RNG,

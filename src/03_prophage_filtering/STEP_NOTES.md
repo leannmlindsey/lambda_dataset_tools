@@ -1,6 +1,6 @@
 # Step 03 — Prophage filtering
 
-**Status:** ⏳ to port (largest methodological changes pending)
+**Status:** ✅ ported (03a DB build, 03b BLAST array, 03c filter + masking intervals + analyses)
 
 **Purpose:** Ensure bacterial negatives do not contain phage sequence.
 
@@ -30,8 +30,14 @@
   prophages may remain in the negatives. This is the deliberate cost of model-free,
   reproducible curation. Optionally quantify the residual rate descriptively.
 
-**Still to do:**
-- Recover/rewrite the missing `filter_prophage_contaminated_v2.py`.
-- Threshold-sensitivity sweep (identity/length, e.g. 80/90/95 × 200/500/1000) to
-  justify the 90% / 200 bp cut.
-- Revisit the validation step (currently re-BLASTs with the same threshold — circular).
+**Ported (03a / 03b / 03c):**
+- 03a: build the bacteria BLAST DB from the step-02 selection (skips if it exists).
+- 03b: BLAST INPHARED → bacteria (10-way array), emitting full coords (subject for
+  masking, query+qlen for the reverse-contamination analysis).
+- 03c: filter to 90% / 200 bp, build padded per-contig masked intervals
+  (`make_masking_intervals.py`, step-04 input), and run the threshold-sensitivity
+  sweep + reverse-contamination stat (`analyze_blast_hits.py`).
+- `filter_prophage_contaminated_v2.py` is no longer needed — we mask regions at the
+  segment level in step 04 rather than dropping whole genomes.
+- The old circular "prophage-free validation" is dropped; step 04 instead QCs that no
+  sampled segment overlaps a masked interval.

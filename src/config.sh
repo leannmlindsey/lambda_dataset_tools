@@ -102,6 +102,10 @@ export PYTHONHASHSEED=0
 : "${PROPHAGE_MIN_ALIGN_LEN:=200}"
 : "${PROPHAGE_MAX_TARGET_SEQS:=2000}"
 : "${PROPHAGE_EVALUE:=1e-5}"
+: "${PROPHAGE_MASK_PAD:=500}"          # bp padding each side of a masked phage-hit region
+: "${PROPHAGE_BLAST_DIR:=${WORK_DIR}/prophage_blast}"                         # raw/filtered hits + analyses
+: "${PROPHAGE_HITS:=${PROPHAGE_BLAST_DIR}/phage_vs_bacteria_filtered.tsv}"    # filtered hits (>= id/len)
+: "${PROPHAGE_MASK_INTERVALS:=${GTDB_SELECTION_DIR}/masked_intervals.tsv}"    # per-contig masked regions -> step 04
 
 # ----------------------------------------------------------------------------
 # Fragment-level dereplication (step 05) — removes dev/test leakage vs train
