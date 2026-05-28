@@ -32,16 +32,20 @@ SPLIT_DONE="${PROPHAGE_BLAST_DIR}/.split_done"
 # Full coords: bacterial coords on the query side (for masking); phage coords on
 # the subject side + slen (for the reverse-contamination analysis).
 OUTFMT="6 qseqid sseqid pident length qstart qend sstart send qlen slen evalue bitscore"
-mkdir -p "${SPLIT_DIR}"
-
 ls "${PHAGE_BLASTDB}".n* >/dev/null 2>&1 || { echo "ERROR: phage DB missing (run 03a first)"; exit 1; }
 [ -s "${BACTERIA_FASTA_COMBINED}" ] || { echo "ERROR: combined bacterial FASTA missing (run 03a first)"; exit 1; }
 
 if [ "${SLURM_ARRAY_TASK_ID}" -eq 0 ]; then
+    # Clear any stale splits / done-marker from a prior run BEFORE other array
+    # tasks have a chance to check for them; otherwise stale state makes 1..9
+    # exit early with "no split file" before task 0 finishes splitting.
+    rm -rf "${SPLIT_DIR}" "${SPLIT_DONE}"
+    mkdir -p "${SPLIT_DIR}"
     echo "Task 0: splitting $(grep -c '^>' "${BACTERIA_FASTA_COMBINED}") bacterial sequences into ${NUM_SPLITS} chunks..."
     NUM_SEQS=$(grep -c "^>" "${BACTERIA_FASTA_COMBINED}")
     PER=$(( (NUM_SEQS + NUM_SPLITS - 1) / NUM_SPLITS ))
     awk -v n="${PER}" -v dir="${SPLIT_DIR}" '
+        BEGIN { f = 0; c = 0 }                       # initialize so split_0 exists
         /^>/ { if (c >= n) { f++; c = 0 } c++ }
         { print > (dir "/split_" f ".fasta") }
     ' "${BACTERIA_FASTA_COMBINED}"
