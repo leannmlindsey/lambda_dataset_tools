@@ -53,26 +53,24 @@ JID_PHAGE_SELECT="$(submit 01_phage_selection \
 JID_BACT_SELECT="$(submit 02_bacteria_selection \
     "${SRC_DIR}/02_bacteria_selection/02_select_gtdb.slurm")"
 
-# ---- 03  Prophage BLAST (bacteria-as-query vs INPHARED): prep -> BLAST array -> postprocess
-# Alignment-based, INPHARED-only. Bacteria-as-query keeps -max_target_seqs from
-# capping out for widespread temperate phages, so masking is complete.
-JID_PREP="$(submit 03a_prep_blast \
-    "${SRC_DIR}/03_prophage_filtering/03a_prep_blast.slurm" "${JID_BACT_SELECT}")"
-JID_BLAST="$(submit 03b_bacteria_vs_phage \
-    "${SRC_DIR}/03_prophage_filtering/03b_blast_bacteria_vs_phage.slurm" "${JID_PREP}")"
-JID_PROPHAGE="$(submit 03c_postprocess \
-    "${SRC_DIR}/03_prophage_filtering/03c_postprocess_blast.slurm" "${JID_BLAST}")"
+# ---- 03  Sample PHAGE fragments (sets the per-split count) ------------------
+JID_PHAGE_FRAG="$(submit 03_sample_phage_fragments \
+    "${SRC_DIR}/03_sample_phage_fragments/03_sample_phage_fragments.slurm" "${JID_PHAGE_SELECT}")"
 
-# ---- 04  Subsampling (phage from step 01; bacteria mask-aware from steps 02+03)
-JID_SUB_PHAGE="$(submit 04a_subsample_phage \
-    "${SRC_DIR}/04_subsampling/04a_subsample_phage.slurm" "${JID_PHAGE_SELECT}")"
-JID_SUB_BACT="$(submit 04b_subsample_bacteria \
-    "${SRC_DIR}/04_subsampling/04b_subsample_bacteria.slurm" "${JID_PROPHAGE}")"
+# ---- 04  Sample BACTERIAL fragments (matches phage count) -------------------
+JID_BACT_FRAG="$(submit 04_sample_bacteria_fragments \
+    "${SRC_DIR}/04_sample_bacteria_fragments/04_sample_bacteria_fragments.slurm" \
+    "${JID_PHAGE_FRAG}:${JID_BACT_SELECT}")"
 
-# ---- 05  Fragment dereplication (remove dev/test leakage vs train) ---------
-# Depends on BOTH subsampling jobs (afterok on a colon-list waits for all).
-JID_DEREP="$(submit 05_dereplication \
-    "${SRC_DIR}/05_dereplication/dereplicate_fragments.slurm" "${JID_SUB_PHAGE}:${JID_SUB_BACT}")"
+# ---- 05  Prophage check on bacterial fragments + replacement sampling ------
+# Per-fragment BLAST at 70%/200 -> for hits, full-genome BLAST -> replace from
+# clean regions of the same genome. No phage-side masking (deliberate).
+JID_05A="$(submit 05a_blast_fragments \
+    "${SRC_DIR}/05_prophage_check/05a_blast_fragments.slurm" "${JID_BACT_FRAG}")"
+JID_05B="$(submit 05b_blast_affected_genomes \
+    "${SRC_DIR}/05_prophage_check/05b_blast_affected_genomes.slurm" "${JID_05A}")"
+JID_PROPHAGE_CHECK="$(submit 05c_resample \
+    "${SRC_DIR}/05_prophage_check/05c_resample.slurm" "${JID_05B}")"
 
 # ---- 06  Merge + training CSVs (full and dereplicated "hard" sets) ---------
 # JID_MERGE="$(submit 06_merge "${SRC_DIR}/06_merge/06_merge.slurm" "${JID_DEREP}")"

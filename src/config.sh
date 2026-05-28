@@ -97,15 +97,16 @@ export PYTHONHASHSEED=0
 # ----------------------------------------------------------------------------
 # Prophage filtering (BLAST phages vs bacteria)
 # ----------------------------------------------------------------------------
-: "${PROPHAGE_MIN_IDENTITY:=90}"
-: "${PROPHAGE_MIN_ALIGN_LEN:=200}"
-: "${PROPHAGE_MAX_TARGET_SEQS:=2000}"
-: "${PROPHAGE_EVALUE:=1e-5}"
-: "${PROPHAGE_MASK_PAD:=500}"          # bp padding each side of a masked phage-hit region
-: "${PROPHAGE_BLAST_DIR:=${WORK_DIR}/prophage_blast}"                         # raw/filtered hits + analyses
-: "${BACTERIA_FASTA_COMBINED:=${PROPHAGE_BLAST_DIR}/selected_bacteria.fna}"   # 03a output, 03b query
-: "${PROPHAGE_HITS:=${PROPHAGE_BLAST_DIR}/bacteria_vs_phage_filtered.tsv}"    # filtered hits (>= id/len), bacteria-as-query
-: "${PROPHAGE_MASK_INTERVALS:=${GTDB_SELECTION_DIR}/masked_intervals.tsv}"    # per-contig masked regions -> step 04
+# Step 05 -- prophage check on bacterial fragments (BLAST fragments vs INPHARED;
+# replace any fragment that hits with a fresh sample from the same genome's
+# non-phage regions).
+: "${PROPHAGE_CHECK_MIN_IDENTITY:=70}"        # filter threshold for fragment hits AND for full-genome hits
+: "${PROPHAGE_CHECK_MIN_ALIGN_LEN:=200}"
+: "${PROPHAGE_CHECK_MASK_PAD:=500}"           # bp pad around masked phage regions in affected genomes
+: "${PROPHAGE_CHECK_DIR:=${WORK_DIR}/prophage_check}"   # step 05 working dir (raw hits, masks, gathered FASTA)
+# BLAST execution parameters (shared)
+: "${BLAST_MAX_TARGET_SEQS:=2000}"
+: "${BLAST_EVALUE:=1e-5}"
 
 # ----------------------------------------------------------------------------
 # Fragment-level dereplication (step 05) — removes dev/test leakage vs train
