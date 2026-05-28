@@ -263,13 +263,17 @@ def main():
         if not progressed:
             break
 
-    # Emit (sorted accession order for stable output).
-    segments = []
+    # Emit (sorted accession order for stable output). Track the REAL accession
+    # alongside each candidate -- otherwise the metadata writer tries to
+    # re-derive it from the seg_id with rsplit, which mangles accessions when
+    # the contig ID itself contains underscores (NC_001234.1, NZ_CP012345.1).
+    segments = []  # (accession, seg_id, seq, contig, start, end)
     for acc in sorted(chosen):
-        segments.extend(candidates_by_acc[acc][:chosen[acc]])
+        for cand in candidates_by_acc[acc][:chosen[acc]]:
+            segments.append((acc, *cand))
 
     with open(out, "w") as fh:
-        for seg_id, seq, *_ in segments:
+        for _acc, seg_id, seq, *_ in segments:
             fh.write(f">{seg_id}\n")
             for i in range(0, len(seq), 80):
                 fh.write(seq[i:i + 80] + "\n")
@@ -277,8 +281,7 @@ def main():
     if args.output_metadata:
         with open(args.output_metadata, "w") as fh:
             fh.write("segment_id\taccession\tcontig\tstart\tend\tlength\n")
-            for seg_id, seq, cid, start, end in segments:
-                acc = seg_id.rsplit("_", 3)[0] if "_" in seg_id else seg_id
+            for acc, seg_id, seq, cid, start, end in segments:
                 fh.write(f"{seg_id}\t{acc}\t{cid}\t{start}\t{end}\t{end - start}\n")
 
     print("\nSummary:")

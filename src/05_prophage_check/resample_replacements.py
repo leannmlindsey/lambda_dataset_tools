@@ -132,6 +132,8 @@ def load_masks(path):
 def read_genome(gtdb_dir, accession):
     """Return {contig_id: seq_str}, handling GCA<->GCF fallback."""
     fna, norm = accession_to_path(gtdb_dir, accession)
+    if norm is None:
+        return None                                          # accession didn't parse
     if fna is None or not fna.exists():
         alt = norm.replace("GCA_", "GCF_") if norm.startswith("GCA_") else norm.replace("GCF_", "GCA_")
         fna, norm = accession_to_path(gtdb_dir, alt)
