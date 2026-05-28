@@ -53,26 +53,26 @@ JID_PHAGE_SELECT="$(submit 01_phage_selection \
 JID_BACT_SELECT="$(submit 02_bacteria_selection \
     "${SRC_DIR}/02_bacteria_selection/02_select_gtdb.slurm")"
 
-# ---- 03  Prophage BLAST (build DB -> BLAST array -> postprocess) ------------
-# Alignment-based, INPHARED-only; produces per-contig masked intervals for step 04.
-JID_BACTERIA_DB="$(submit 03a_bacteria_blastdb \
-    "${SRC_DIR}/03_prophage_filtering/03a_create_bacteria_blastdb.slurm" "${JID_BACT_SELECT}")"
-JID_PHAGE_BLAST="$(submit 03b_phage_vs_bacteria \
-    "${SRC_DIR}/03_prophage_filtering/03b_blast_phage_vs_bacteria.slurm" "${JID_BACTERIA_DB}")"
+# ---- 03  Prophage BLAST (bacteria-as-query vs INPHARED): prep -> BLAST array -> postprocess
+# Alignment-based, INPHARED-only. Bacteria-as-query keeps -max_target_seqs from
+# capping out for widespread temperate phages, so masking is complete.
+JID_PREP="$(submit 03a_prep_blast \
+    "${SRC_DIR}/03_prophage_filtering/03a_prep_blast.slurm" "${JID_BACT_SELECT}")"
+JID_BLAST="$(submit 03b_bacteria_vs_phage \
+    "${SRC_DIR}/03_prophage_filtering/03b_blast_bacteria_vs_phage.slurm" "${JID_PREP}")"
 JID_PROPHAGE="$(submit 03c_postprocess \
-    "${SRC_DIR}/03_prophage_filtering/03c_postprocess_blast.slurm" "${JID_PHAGE_BLAST}")"
+    "${SRC_DIR}/03_prophage_filtering/03c_postprocess_blast.slurm" "${JID_BLAST}")"
 
-# ---- 04  Subsampling (phage + bacteria segments, 2k/4k/8k) -----------------
-# TODO(port): fixes = all-contig sampling, reproducible per-accession RNG,
-#             count valid genomes before distributing target segments.
-# Depends on phage selection AND prophage filtering.
-# JID_SUBSAMPLE="$(submit 04_subsampling \
-#     "${SRC_DIR}/04_subsampling/04_subsample.slurm" "${JID_PROPHAGE}")"
+# ---- 04  Subsampling (phage from step 01; bacteria mask-aware from steps 02+03)
+JID_SUB_PHAGE="$(submit 04a_subsample_phage \
+    "${SRC_DIR}/04_subsampling/04a_subsample_phage.slurm" "${JID_PHAGE_SELECT}")"
+JID_SUB_BACT="$(submit 04b_subsample_bacteria \
+    "${SRC_DIR}/04_subsampling/04b_subsample_bacteria.slurm" "${JID_PROPHAGE}")"
 
 # ---- 05  Fragment dereplication (remove dev/test leakage vs train) ---------
-# PORTED + self-tested. Activates once 04 is ported (needs the segment FASTAs).
-# JID_DEREP="$(submit 05_dereplication \
-#     "${SRC_DIR}/05_dereplication/dereplicate_fragments.slurm" "${JID_SUBSAMPLE}")"
+# Depends on BOTH subsampling jobs (afterok on a colon-list waits for all).
+JID_DEREP="$(submit 05_dereplication \
+    "${SRC_DIR}/05_dereplication/dereplicate_fragments.slurm" "${JID_SUB_PHAGE}:${JID_SUB_BACT}")"
 
 # ---- 06  Merge + training CSVs (full and dereplicated "hard" sets) ---------
 # JID_MERGE="$(submit 06_merge "${SRC_DIR}/06_merge/06_merge.slurm" "${JID_DEREP}")"

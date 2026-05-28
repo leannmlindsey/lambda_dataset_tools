@@ -70,8 +70,7 @@ export PYTHONHASHSEED=0
 # ----------------------------------------------------------------------------
 # BLAST databases
 # ----------------------------------------------------------------------------
-: "${PHAGE_BLASTDB:=/u/llindsey1/llindsey/black_and_white/data/inphared/blastdb/inphared_phages}"
-: "${BACTERIA_BLASTDB:=${WORK_DIR}/gtdb_blastdb_selected/gtdb_bacteria_selected}"
+: "${PHAGE_BLASTDB:=${WORK_DIR}/inphared_blastdb/inphared_phages}"   # built by step 03a if not present
 
 # ----------------------------------------------------------------------------
 # Split / selection parameters
@@ -104,7 +103,8 @@ export PYTHONHASHSEED=0
 : "${PROPHAGE_EVALUE:=1e-5}"
 : "${PROPHAGE_MASK_PAD:=500}"          # bp padding each side of a masked phage-hit region
 : "${PROPHAGE_BLAST_DIR:=${WORK_DIR}/prophage_blast}"                         # raw/filtered hits + analyses
-: "${PROPHAGE_HITS:=${PROPHAGE_BLAST_DIR}/phage_vs_bacteria_filtered.tsv}"    # filtered hits (>= id/len)
+: "${BACTERIA_FASTA_COMBINED:=${PROPHAGE_BLAST_DIR}/selected_bacteria.fna}"   # 03a output, 03b query
+: "${PROPHAGE_HITS:=${PROPHAGE_BLAST_DIR}/bacteria_vs_phage_filtered.tsv}"    # filtered hits (>= id/len), bacteria-as-query
 : "${PROPHAGE_MASK_INTERVALS:=${GTDB_SELECTION_DIR}/masked_intervals.tsv}"    # per-contig masked regions -> step 04
 
 # ----------------------------------------------------------------------------
@@ -122,9 +122,9 @@ PHAGE_DATASETS=(
     "${DATA_DIR}/inphared_dataset_8k"
 )
 BACTERIA_DATASETS=(
-    "${DATA_DIR}/gtdb_dataset_filtered_v3"
-    "${DATA_DIR}/gtdb_dataset_filtered_v3_4k"
-    "${DATA_DIR}/gtdb_dataset_filtered_v3_8k"
+    "${DATA_DIR}/gtdb_dataset"
+    "${DATA_DIR}/gtdb_dataset_4k"
+    "${DATA_DIR}/gtdb_dataset_8k"
 )
 
 # ----------------------------------------------------------------------------

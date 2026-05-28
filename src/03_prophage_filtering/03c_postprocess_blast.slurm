@@ -11,9 +11,9 @@
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=32g
 
-# Step 03c (runs after the 03b array): combine raw BLAST hits, filter to the
-# masking threshold, build per-contig masked intervals for step 04, and run the
-# threshold-sensitivity + reverse-contamination analyses.
+# Step 03c (after the 03b array): combine raw bacteria-vs-phage hits, filter to
+# the masking threshold, build per-contig padded masked intervals for step 04,
+# and run the threshold-sensitivity + reverse-contamination analyses.
 
 set -euo pipefail
 source "${LAMBDA_CONFIG:-/projects/bfzj/llindsey1/black_and_white/scripts/lambda_dataset_tools/src/config.sh}"
@@ -23,7 +23,7 @@ conda activate "${CONDA_ENV}"
 RAW="${PROPHAGE_BLAST_DIR}/blast_raw_combined.tsv"
 
 echo "=========================================="
-echo "Step 03c: postprocess phage-vs-bacteria BLAST"
+echo "Step 03c: postprocess bacteria-vs-phage BLAST"
 echo "  thresholds: >= ${PROPHAGE_MIN_IDENTITY}% id, >= ${PROPHAGE_MIN_ALIGN_LEN} bp; pad ${PROPHAGE_MASK_PAD} bp"
 echo "  start:      $(date)"
 echo "=========================================="
@@ -40,7 +40,7 @@ awk -v id="${PROPHAGE_MIN_IDENTITY}" -v ln="${PROPHAGE_MIN_ALIGN_LEN}" \
     '$3 >= id && $4 >= ln' "${RAW}" > "${PROPHAGE_HITS}"
 echo "  filtered hits (>= ${PROPHAGE_MIN_IDENTITY}% / ${PROPHAGE_MIN_ALIGN_LEN} bp): $(wc -l < "${PROPHAGE_HITS}")"
 
-# 3. Build per-contig masked intervals (padded, merged) for step 04
+# 3. Build per-contig masked intervals (bacterial coords on query side) for step 04
 python "${SRC_DIR}/03_prophage_filtering/make_masking_intervals.py" \
     --blast-hits "${PROPHAGE_HITS}" \
     --output "${PROPHAGE_MASK_INTERVALS}" \
@@ -48,7 +48,7 @@ python "${SRC_DIR}/03_prophage_filtering/make_masking_intervals.py" \
     --min-length "${PROPHAGE_MIN_ALIGN_LEN}" \
     --pad "${PROPHAGE_MASK_PAD}"
 
-# 4. Descriptive analyses (no filtering of the data): threshold sweep + reverse contamination
+# 4. Descriptive analyses: threshold sweep + reverse contamination
 python "${SRC_DIR}/03_prophage_filtering/analyze_blast_hits.py" \
     --blast-hits "${RAW}" \
     --rev-identity "${PROPHAGE_MIN_IDENTITY}" \

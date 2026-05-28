@@ -39,9 +39,9 @@ run with `SEED=<n> bash run_pipeline.sh`.
 | # | Stage | Status |
 |---|-------|--------|
 | 01 | Phage selection (vclust reps → train/dev/test, **random representative**) | ✅ ported |
-| 02 | Bacteria selection (GTDB HQ reps, 1/genus) | ⏳ to port (fix: independent RNG per genus) |
-| 03 | Prophage filtering (BLAST; **+ planned geNomad masking**) | ⏳ to port |
-| 04 | Subsampling (2k/4k/8k; fix: all-contig, reproducible RNG) | ⏳ to port |
+| 02 | Bacteria selection (GTDB HQ reps, 1/genus, all ~15,865 genera) | ✅ ported (run-verified) |
+| 03 | Prophage BLAST (**bacteria-as-query** vs INPHARED) → masked intervals + threshold/reverse-contam analyses | ✅ ported |
+| 04 | Subsampling (phage proportional; bacteria mask-aware, all-contig ≥10 kb) | ✅ ported (self-tested) |
 | 05 | Fragment dereplication (remove dev/test leakage vs train) | ✅ ported (self-tested) |
 | 06 | Merge + training CSVs (full **and** dereplicated "hard" sets) | ⏳ to port |
 | 07 | Controls (GC shuffle; + planned dinucleotide-preserving) | ⏳ to port |

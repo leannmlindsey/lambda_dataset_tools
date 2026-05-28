@@ -1,25 +1,19 @@
 #!/usr/bin/env python3
 """
-Two descriptive analyses of the phage-vs-bacteria BLAST (read-only; neither
-filters the data — they justify/characterize the masking choices).
+Descriptive analyses of the bacteria-vs-phage BLAST (read-only; the data is not
+filtered or modified -- these summaries justify and characterize the masking).
 
-1. THRESHOLD SENSITIVITY — for identity in {80,90,95} x alignment length in
+BLAST direction in this pipeline: bacteria-as-query, INPHARED-as-subject. So:
+  qseqid = bacterial contig, qstart/qend/qlen = bacterial coords/length
+  sseqid = phage,            sstart/send/slen = phage    coords/length
+
+1. THRESHOLD SENSITIVITY -- for identity in {80,90,95} x alignment length in
    {200,500,1000}, report passing hits, bacterial bp that would be masked
-   (merged per contig, no padding), and contigs affected. Shows whether the
-   chosen 90% / 200 bp cut is stable (small moves -> small changes).
+   (merged per contig, no padding), and contigs affected.
 
-2. REVERSE CONTAMINATION (phage side) — at the chosen id/len, what fraction of
-   phage genomes have a strong bacterial hit, and how much of each phage is
-   covered (merged query intervals / qlen). Quantifies host-like content in the
-   positives; we do NOT act on it (documented limitation).
-
-Input: BLAST tabular (outfmt 6) with columns
-  0 qseqid 1 sseqid 2 pident 3 length 4 qstart 5 qend
-  6 sstart 7 send   8 qlen   9 slen   10 evalue 11 bitscore
-
-Usage:
-    python analyze_blast_hits.py --blast-hits raw_hits.tsv \
-        [--rev-identity 90 --rev-length 200] [--output report.txt]
+2. REVERSE CONTAMINATION (phage side) -- at the chosen id/len, what fraction of
+   phages have a strong bacterial hit, and how much of each phage is covered
+   (merged phage intervals / phage length). Descriptive; no phage-side masking.
 """
 
 import argparse
@@ -27,11 +21,11 @@ from collections import defaultdict
 
 
 def parse_args():
-    p = argparse.ArgumentParser(description="Threshold-sensitivity + reverse-contamination summaries")
-    p.add_argument("--blast-hits", "-b", required=True, help="RAW BLAST tabular hits (outfmt 6)")
+    p = argparse.ArgumentParser(description="Threshold-sensitivity + reverse-contamination summaries (bacteria-as-query)")
+    p.add_argument("--blast-hits", "-b", required=True)
     p.add_argument("--rev-identity", type=float, default=90.0)
     p.add_argument("--rev-length", type=int, default=200)
-    p.add_argument("--output", "-o", default=None, help="Optional report file")
+    p.add_argument("--output", "-o", default=None)
     return p.parse_args()
 
 
@@ -56,9 +50,9 @@ def main():
         print(s)
         lines.append(s)
 
-    # Load once into memory as tuples.
-    hits = []  # (qseqid, sseqid, pident, length, qstart, qend, sstart, send, qlen)
-    qlen = {}
+    # Load into tuples. Indices match the bacteria-as-query convention.
+    hits = []  # (contig, phage, pident, length, qstart, qend, sstart, send, slen)
+    slen_by_phage = {}
     with open(args.blast_hits) as f:
         for line in f:
             p = line.rstrip("\n").split("\t")
@@ -66,20 +60,21 @@ def main():
                 continue
             try:
                 rec = (p[0], p[1], float(p[2]), int(p[3]),
-                       int(p[4]), int(p[5]), int(p[6]), int(p[7]), int(p[8]))
+                       int(p[4]), int(p[5]), int(p[6]), int(p[7]), int(p[9]))
             except (ValueError, IndexError):
                 continue
             hits.append(rec)
-            qlen[p[0]] = rec[8]
+            slen_by_phage[p[1]] = rec[8]
 
     emit("=" * 70)
-    emit("Phage-vs-bacteria BLAST analysis")
+    emit("Bacteria-vs-phage BLAST analysis")
     emit("=" * 70)
     emit(f"Total raw hits: {len(hits):,}")
-    emit(f"Distinct phages with any hit: {len({h[0] for h in hits}):,}")
+    emit(f"Distinct phages with any hit: {len({h[1] for h in hits}):,}")
+    emit(f"Distinct bacterial contigs with any hit: {len({h[0] for h in hits}):,}")
     emit("")
 
-    # ---- 1. Threshold sensitivity (bacterial masked bp) ----
+    # ---- 1. Threshold sensitivity (bacterial bp that would be masked) ----
     emit("Threshold sensitivity (bacterial sequence that would be masked):")
     emit(f"{'identity':>9}{'min_len':>9}{'hits':>12}{'contigs':>10}{'masked_bp':>15}")
     emit("-" * 70)
@@ -87,12 +82,12 @@ def main():
         for mlen in (200, 500, 1000):
             by_contig = defaultdict(list)
             n = 0
-            for q, s, pid, ln, qs, qe, ss, se, ql in hits:
+            for contig, phage, pid, ln, qs, qe, ss, se, slen in hits:
                 if pid >= ident and ln >= mlen:
-                    by_contig[s].append((min(ss, se), max(ss, se)))
+                    by_contig[contig].append((min(qs, qe), max(qs, qe)))
                     n += 1
-            masked_bp = sum(e - st + 1 for s in by_contig
-                            for st, e in merge_intervals(by_contig[s]))
+            masked_bp = sum(e - s + 1 for c in by_contig
+                            for s, e in merge_intervals(by_contig[c]))
             emit(f"{ident:>8.0f}%{mlen:>9,}{n:>12,}{len(by_contig):>10,}{masked_bp:>15,}")
     emit("")
 
@@ -100,18 +95,18 @@ def main():
     emit(f"Reverse contamination at >= {args.rev_identity}% / >= {args.rev_length} bp "
          f"(host-like content in phages):")
     by_phage = defaultdict(list)
-    for q, s, pid, ln, qs, qe, ss, se, ql in hits:
+    for contig, phage, pid, ln, qs, qe, ss, se, slen in hits:
         if pid >= args.rev_identity and ln >= args.rev_length:
-            by_phage[q].append((min(qs, qe), max(qs, qe)))
+            by_phage[phage].append((min(ss, se), max(ss, se)))
 
-    n_phage_total = len(qlen)
+    n_phage_total = len(slen_by_phage)
     n_phage_hit = len(by_phage)
     coverages = []
-    for q, ivs in by_phage.items():
+    for phage, ivs in by_phage.items():
         covered = sum(e - s + 1 for s, e in merge_intervals(ivs))
-        ql = qlen.get(q, 0)
-        if ql > 0:
-            coverages.append(min(100.0, covered / ql * 100))
+        slen = slen_by_phage.get(phage, 0)
+        if slen > 0:
+            coverages.append(min(100.0, covered / slen * 100))
     coverages.sort()
 
     def pct(p):
@@ -123,10 +118,10 @@ def main():
     frac = (n_phage_hit / n_phage_total * 100) if n_phage_total else 0.0
     emit(f"  Phages with a strong bacterial hit: {n_phage_hit:,} / {n_phage_total:,} ({frac:.1f}%)")
     if coverages:
-        mean_cov = sum(coverages) / len(coverages)
-        emit(f"  Of those, % of phage length covered by bacterial hits:")
-        emit(f"    median={pct(50):.2f}%  mean={mean_cov:.2f}%  p90={pct(90):.2f}%  max={max(coverages):.2f}%")
-    emit("  (Descriptive only — no phage-side masking is applied.)")
+        emit("  Of those, % of phage length covered by bacterial hits:")
+        emit(f"    median={pct(50):.2f}%  mean={sum(coverages)/len(coverages):.2f}%  "
+             f"p90={pct(90):.2f}%  max={max(coverages):.2f}%")
+    emit("  (Descriptive only -- no phage-side masking is applied.)")
 
     if args.output:
         with open(args.output, "w") as fh:

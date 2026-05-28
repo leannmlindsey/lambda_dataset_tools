@@ -1,6 +1,6 @@
 # Step 04 — Segment subsampling
 
-**Status:** ⏳ to port
+**Status:** ✅ ported (04a phage; 04b mask-aware multi-contig bacteria, self-tested)
 
 **Purpose:** Cut fixed-length (2k/4k/8k) non-overlapping segments from phage and
 bacterial genomes; balance bacterial segment counts to the phage counts.

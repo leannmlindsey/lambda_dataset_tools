@@ -30,14 +30,24 @@
   prophages may remain in the negatives. This is the deliberate cost of model-free,
   reproducible curation. Optionally quantify the residual rate descriptively.
 
-**Ported (03a / 03b / 03c):**
-- 03a: build the bacteria BLAST DB from the step-02 selection (skips if it exists).
-- 03b: BLAST INPHARED → bacteria (10-way array), emitting full coords (subject for
-  masking, query+qlen for the reverse-contamination analysis).
-- 03c: filter to 90% / 200 bp, build padded per-contig masked intervals
+**Ported (03a / 03b / 03c) — bacteria-as-query, INPHARED-as-subject:**
+- 03a: build a BLAST nucleotide DB from INPHARED (curated phages) and gather the
+  step-02 selected bacterial genomes into one combined query FASTA. Both outputs
+  are cached — reruns skip if present.
+- 03b: 10-way array; task 0 splits the bacterial FASTA, each task BLASTs its
+  chunk against the INPHARED DB. **Direction matters:** with bacteria as query,
+  `-max_target_seqs=2000` caps per *bacterial contig* (which reports its top
+  2000 phage matches) — far below the cap in practice — so widespread temperate
+  phages can't truncate hits, and masking is more complete than the phage-as-
+  query alternative.
+- 03c: combine + filter to 90% / 200 bp, build padded per-contig masked intervals
   (`make_masking_intervals.py`, step-04 input), and run the threshold-sensitivity
   sweep + reverse-contamination stat (`analyze_blast_hits.py`).
+- Column convention: bacterial coords are on the QUERY side
+  (`qseqid` / `qstart` / `qend` / `qlen`); phage coords for the reverse-
+  contamination analysis are on the SUBJECT side (`sseqid` / `sstart` / `send` /
+  `slen`). All step-03 Python scripts assume this.
 - `filter_prophage_contaminated_v2.py` is no longer needed — we mask regions at the
-  segment level in step 04 rather than dropping whole genomes.
+  segment level (step 04), not drop whole genomes.
 - The old circular "prophage-free validation" is dropped; step 04 instead QCs that no
   sampled segment overlaps a masked interval.
