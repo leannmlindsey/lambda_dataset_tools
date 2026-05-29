@@ -88,8 +88,9 @@ JID_08B="$(submit 08b_fpr_check \
 JID_BENCH="$(submit 08c_fpr_to_phrog \
     "${SRC_DIR}/08_bacteria_only_fpr/08c_to_phrog.slurm" "${JID_08B}")"
 
-# ---- 09  Package for release -----------------------------------------------
-# JID_PACKAGE="$(submit 09_package "${SRC_DIR}/09_package/09_package.slurm" "${JID_MERGE}")"
+# ---- 09  Package release (Zenodo / HuggingFace-ready directory + checksums) -
+JID_PACKAGE="$(submit 09_package \
+    "${SRC_DIR}/09_package/09_package.slurm" "${JID_BENCH}:${JID_CONTROLS}:${JID_MERGE}")"
 
 echo ""
 echo "Submitted. Job IDs recorded in: ${RUN_LOG}"

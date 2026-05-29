@@ -110,6 +110,10 @@ export PYTHONHASHSEED=0
 : "${FPR_TARGET_FRAGMENTS:=36176}"                             # PHROG row count (line count - header)
 : "${FPR_N_GENOMES:=18000}"                                    # fresh-pool size; comfortably yields the target at ~2 per genome
 
+# Step 09 -- packaged release (Zenodo / HuggingFace-ready directory + checksums)
+: "${RELEASE_VERSION:=v1}"
+: "${RELEASE_DIR:=${DATA_DIR}/LAMBDA_${RELEASE_VERSION}}"
+
 # Step 05 -- prophage check on bacterial fragments (BLAST fragments vs INPHARED;
 # replace any fragment that hits with a fresh sample from the same genome's
 # non-phage regions).

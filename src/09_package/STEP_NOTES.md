@@ -1,17 +1,26 @@
-# Step 09 — Package for release
+# Step 09 — Package release
 
-**Status:** ⏳ to port
+**Role:** assemble a Zenodo / HuggingFace-ready release directory at
+`${RELEASE_DIR}` (default `${DATA_DIR}/LAMBDA_v1`).
 
-**Purpose:** Build the tar.gz archives + metadata bundle for Zenodo.
+**Renamed for the release:** internal `dev` → published `val` (HF convention).
 
-**Implements (current, top-level):** `create_lambda_final.sh`
+**Layout:**
+```
+LAMBDA_v1/
+├── README.md                              # dataset card (Zenodo + HF compatible)
+├── train_val_test/{2k,4k,8k}/{train,val,test}.csv
+├── shuffled_controls/{2k,4k,8k}/test_shuffled.csv
+├── fpr_test/{2k,4k,8k}/bacteria_segments_*.csv
+├── metadata/
+│   ├── phage_accessions/{train,val,test}.txt
+│   ├── bacteria_accessions/{train,val,test}.txt
+│   ├── fpr_bacteria_accessions.txt
+│   └── pipeline_version.txt              # git commit of this pipeline
+└── checksums.md5                         # md5 of every data file
+```
 
-**Pending fixes / additions:**
-- Include **both** the full and dereplicated ("hard") merged datasets, and the
-  step-05 `*_dereplication_report.txt` + `*_leaked.tsv` audit files.
-- Include the pinned `environment.yml` and a versions manifest (vclust,
-  pharokka, bakta, checkm2, blast, genomad).
-- Write `manifests/` md5 checksums of all released files so a rerun can be
-  verified bit-identical.
-- Bundle the corrected `METHODS_DATA_SELECTION.md` and the resolved source
-  counts (GTDB release, INPHARED rep count) once verified.
+Genome-wide eval datasets stay on biowulf — they're not built by this pipeline
+and aren't part of this release.
+
+**Configurable:** `RELEASE_VERSION` (default `v1`) and `RELEASE_DIR`.
