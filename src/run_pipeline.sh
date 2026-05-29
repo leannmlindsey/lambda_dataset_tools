@@ -72,8 +72,9 @@ JID_05B="$(submit 05b_blast_affected_genomes \
 JID_PROPHAGE_CHECK="$(submit 05c_resample \
     "${SRC_DIR}/05_prophage_check/05c_resample.slurm" "${JID_05B}")"
 
-# ---- 06  Merge + training CSVs (full and dereplicated "hard" sets) ---------
-# JID_MERGE="$(submit 06_merge "${SRC_DIR}/06_merge/06_merge.slurm" "${JID_DEREP}")"
+# ---- 06  Merge into 1:1 train/val/test CSVs --------------------------------
+JID_MERGE="$(submit 06_merge \
+    "${SRC_DIR}/06_merge/06_merge.slurm" "${JID_PROPHAGE_CHECK}")"
 
 # ---- 07  Controls (GC shuffle; planned dinucleotide-preserving shuffle) ----
 # JID_CONTROLS="$(submit 07_controls "${SRC_DIR}/07_controls/07_controls.slurm" "${JID_DEREP}")"
