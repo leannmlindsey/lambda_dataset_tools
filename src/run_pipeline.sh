@@ -76,8 +76,9 @@ JID_PROPHAGE_CHECK="$(submit 05c_resample \
 JID_MERGE="$(submit 06_merge \
     "${SRC_DIR}/06_merge/06_merge.slurm" "${JID_PROPHAGE_CHECK}")"
 
-# ---- 07  Controls (GC shuffle; planned dinucleotide-preserving shuffle) ----
-# JID_CONTROLS="$(submit 07_controls "${SRC_DIR}/07_controls/07_controls.slurm" "${JID_DEREP}")"
+# ---- 07  Shuffled-nucleotide control (test set only) -----------------------
+JID_CONTROLS="$(submit 07_shuffled_control \
+    "${SRC_DIR}/07_shuffled_control/07_shuffled_control.slurm" "${JID_MERGE}")"
 
 # ---- 08  Benchmarks (phage-only, bacteria-only prophage-free, bacterial CDS)
 # JID_BENCH="$(submit 08_benchmarks "${SRC_DIR}/08_benchmarks/08_benchmarks.slurm" "${JID_PROPHAGE}")"

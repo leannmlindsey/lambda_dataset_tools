@@ -100,6 +100,9 @@ export PYTHONHASHSEED=0
 # Step 06 -- merged 1:1 train/val/test CSVs (phage + checked-bacteria, labeled, shuffled)
 : "${MERGED_DIR:=${DATA_DIR}/merged_datasets}"
 
+# Step 07 -- shuffled-nucleotide control derived from the merged test CSVs
+: "${SHUFFLED_DIR:=${DATA_DIR}/shuffled_controls}"
+
 # Step 05 -- prophage check on bacterial fragments (BLAST fragments vs INPHARED;
 # replace any fragment that hits with a fresh sample from the same genome's
 # non-phage regions).
