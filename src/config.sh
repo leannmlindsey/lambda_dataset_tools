@@ -103,6 +103,13 @@ export PYTHONHASHSEED=0
 # Step 07 -- shuffled-nucleotide control derived from the merged test CSVs
 : "${SHUFFLED_DIR:=${DATA_DIR}/shuffled_controls}"
 
+# Step 08 -- bacteria-only false-positive-rate dataset, sized to PHROG
+: "${FPR_SELECTION_DIR:=${DATA_DIR}/fpr_selection}"            # fresh-bacteria accession list
+: "${FPR_DATA_DIR:=${DATA_DIR}/fpr_dataset}"                   # FPR FASTAs + final PHROG CSVs
+: "${FPR_CHECK_DIR:=${WORK_DIR}/fpr_prophage_check}"           # FPR-side BLAST/masks workspace
+: "${FPR_TARGET_FRAGMENTS:=36176}"                             # PHROG row count (line count - header)
+: "${FPR_N_GENOMES:=18000}"                                    # fresh-pool size; comfortably yields the target at ~2 per genome
+
 # Step 05 -- prophage check on bacterial fragments (BLAST fragments vs INPHARED;
 # replace any fragment that hits with a fresh sample from the same genome's
 # non-phage regions).

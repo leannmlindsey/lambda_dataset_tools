@@ -80,8 +80,13 @@ JID_MERGE="$(submit 06_merge \
 JID_CONTROLS="$(submit 07_shuffled_control \
     "${SRC_DIR}/07_shuffled_control/07_shuffled_control.slurm" "${JID_MERGE}")"
 
-# ---- 08  Benchmarks (phage-only, bacteria-only prophage-free, bacterial CDS)
-# JID_BENCH="$(submit 08_benchmarks "${SRC_DIR}/08_benchmarks/08_benchmarks.slurm" "${JID_PROPHAGE}")"
+# ---- 08  Bacteria-only FPR dataset (PHROG-sized) ---------------------------
+JID_08A="$(submit 08a_fpr_select \
+    "${SRC_DIR}/08_bacteria_only_fpr/08a_select_and_sample.slurm" "${JID_BACT_SELECT}")"
+JID_08B="$(submit 08b_fpr_check \
+    "${SRC_DIR}/08_bacteria_only_fpr/08b_prophage_check.slurm" "${JID_08A}:${JID_PROPHAGE_CHECK}")"
+JID_BENCH="$(submit 08c_fpr_to_phrog \
+    "${SRC_DIR}/08_bacteria_only_fpr/08c_to_phrog.slurm" "${JID_08B}")"
 
 # ---- 09  Package for release -----------------------------------------------
 # JID_PACKAGE="$(submit 09_package "${SRC_DIR}/09_package/09_package.slurm" "${JID_MERGE}")"
